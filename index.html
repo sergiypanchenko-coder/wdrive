@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#C42A6F">
+<meta name="theme-color" content="#540CAA">
 <meta name="description" content="Book a night-time ride with a verified female driver in Torino.">
-<title>WDrive</title>
-<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Wubber</title>
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +22,7 @@
   <button type="button" class="fab" data-act="menu" aria-label="Open menu">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
+  <div class="map-brand"><img src="logo-mark.png" alt="" width="47" height="30">Wubber</div>
   <button type="button" class="fab fab-right fab-sos" data-act="open-sos" id="fab-sos" aria-label="Safety and emergency" hidden>
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6l7-3z"/><path d="M12 8v4M12 15.5h.01"/></svg>
   </button>
@@ -60,18 +62,13 @@
         <h2>Choose a ride</h2>
       </div>
       <div id="choose-body"></div>
-      <button type="button" class="btn btn-primary btn-big btn-block" data-act="request" id="req-btn">Request WDrive</button>
+      <button type="button" class="btn btn-primary btn-big btn-block" data-act="request" id="req-btn">Request Wubber</button>
     </div>
 
     <div class="sv" id="sv-auth" hidden>
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><path d="M9.5 10l1.8 1.8L14.8 8.5"/></svg>
-        </div>
-        <div><div class="brand-name">WDrive</div><div class="brand-sub">Torino pilot</div></div>
-      </div>
+      <div class="auth-logo"><img src="logo-full.png" alt="Wubber" width="216" height="160"><span class="brand-sub">Torino pilot</span></div>
       <div class="stack" style="gap:4px">
-        <h1 class="greet" id="auth-title">Welcome to WDrive</h1>
+        <h1 class="greet" id="auth-title">Welcome to Wubber</h1>
         <p class="muted" id="auth-sub">Log in or create an account to book a ride with a verified female driver.</p>
       </div>
       <div class="banner" id="setup-banner" hidden>This website isn't connected to its database yet. Put your Supabase Project URL and anon key in <b>config.js</b>, then reload the page.</div>
@@ -101,7 +98,7 @@
             <div class="stack"><label class="lbl" for="su-tname">Name</label><input type="text" id="su-tname" placeholder="Sara"></div>
             <div class="stack"><label class="lbl" for="su-tphone">Phone</label><input type="tel" id="su-tphone" placeholder="+39 …"></div>
           </div>
-          <label class="check"><input type="checkbox" id="su-terms" required><span>I'm taking part in the WDrive pilot in Torino. The pilot team and my driver can see my first name and phone number.<span class="req" aria-hidden="true">*</span></span></label>
+          <label class="check"><input type="checkbox" id="su-terms" required><span>I'm taking part in the Wubber pilot in Torino. The pilot team and my driver can see my first name and phone number.<span class="req" aria-hidden="true">*</span></span></label>
           <p class="fine" id="su-status" aria-live="polite"><span class="req">*</span> Required</p>
           <button type="submit" class="btn btn-primary btn-big btn-block" id="su-submit" disabled>Create account</button>
         </form>
@@ -319,7 +316,7 @@
   <section class="section" id="tab-wait" aria-label="Waiting list" hidden>
     <div class="stack">
       <h1>Join the waiting list</h1>
-      <p class="muted">We'll tell you when WDrive launches across Torino.</p>
+      <p class="muted">We'll tell you when Wubber launches across Torino.</p>
     </div>
     <form id="wait-form" class="card" novalidate>
       <div class="stack"><label class="lbl" for="w-name">Name</label><input type="text" id="w-name" placeholder="Your name"></div>
@@ -334,10 +331,8 @@
 <div class="drawer-wrap" id="drawer" hidden>
   <nav class="drawer" aria-label="Menu">
     <div class="brand">
-      <div class="brand-mark" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><path d="M9.5 10l1.8 1.8L14.8 8.5"/></svg>
-      </div>
-      <div><div class="brand-name">WDrive</div><div class="brand-sub">Torino pilot</div></div>
+      <img class="brand-logo" src="logo-mark.png" alt="" width="56" height="36">
+      <div><div class="brand-name">Wubber</div><div class="brand-sub">Torino pilot</div></div>
     </div>
     <button type="button" class="dr-item" data-act="go" data-to="ride">Ride</button>
     <button type="button" class="dr-item" data-act="go" data-to="account">Account</button>

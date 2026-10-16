@@ -1,4 +1,4 @@
-/* WDrive: Torino pilot. Plain JavaScript, no build step. */
+/* Wubber: Torino pilot. Plain JavaScript, no build step. */
 (function () {
   "use strict";
 
@@ -415,7 +415,7 @@
         boxes.push([x + tw / 2 + 8, y, tw / 2 + 10, 9]);
         ctx.fillStyle = "#C42A6F"; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
         ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(255,255,255,0.95)"; ctx.strokeText(p.label, x + 8, y);
-        ctx.fillStyle = "#8E1F52"; ctx.fillText(p.label, x + 8, y);
+        ctx.fillStyle = "#4A1491"; ctx.fillText(p.label, x + 8, y);
       });
     }
   }
@@ -489,7 +489,7 @@
     if (a && a.lat != null) { store.layers.push(L.marker([a.lat, a.lng], { icon: pinIcon("A"), keyboard: false, interactive: false }).addTo(m)); pts.push([a.lat, a.lng]); }
     if (b && b.lat != null) { store.layers.push(L.marker([b.lat, b.lng], { icon: pinIcon("B"), keyboard: false, interactive: false }).addTo(m)); pts.push([b.lat, b.lng]); }
     if (pts.length === 2) {
-      store.layers.push(L.polyline(pts, { color: "#C42A6F", weight: 4, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(m));
+      store.layers.push(L.polyline(pts, { color: "#540CAA", weight: 4, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(m));
       m.fitBounds(pts, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, maxZoom: 16, animate: false });
     } else {
       m.setView(pts.length ? pts[0] : TORINO, pts.length ? 16 : 13.5, { animate: false });
@@ -703,7 +703,7 @@
 
   function shareText(r) {
     const d = driverOf(r);
-    return "I'm on a WDrive ride: " + r.pickup + " → " + r.dropoff + ". " +
+    return "I'm on a Wubber ride: " + r.pickup + " → " + r.dropoff + ". " +
       (d ? "Driver: " + d.name + (d.car ? ", " + d.car : "") + (d.plate ? ", plate " + d.plate : "") + ". " : "Driver not assigned yet. ") +
       "Ride PIN " + r.pin + ". Booked at " + hhmm(r.createdAt) + ".";
   }
@@ -749,7 +749,7 @@
     $("#auth-seg").hidden = m === "forgot" || m === "reset";
     $("#tab-login").setAttribute("aria-selected", m === "login" ? "true" : "false");
     $("#tab-signup").setAttribute("aria-selected", m === "signup" ? "true" : "false");
-    $("#auth-title").textContent = m === "forgot" ? "Reset your password" : m === "reset" ? "Choose a new password" : "Welcome to WDrive";
+    $("#auth-title").textContent = m === "forgot" ? "Reset your password" : m === "reset" ? "Choose a new password" : "Welcome to Wubber";
     $("#auth-sub").textContent = m === "forgot" ? "Enter your email and we'll send you a link to choose a new password." :
       m === "reset" ? "Pick a new password for your account." : "Log in or create an account to book a ride with a verified female driver.";
     if (m === "signup") checkSignup();
@@ -949,7 +949,7 @@
       '<span class="ico-col"><i class="r-line"></i></span><span></span>' +
       '<span class="ico-col"><i class="r-sq"></i></span><button type="button" class="trip-row" data-act="search-to"><small>Destination</small><b>' + esc(b.label) + "</b></button></div>";
     if (S.samePlace) h += '<div class="alert">Pickup and destination are the same place. Change one of them.</div>';
-    h += '<div class="ride-opt"><div class="car">' + CAR_SVG + '</div><div class="om"><b>WDrive</b><small>Verified female driver</small><small>' +
+    h += '<div class="ride-opt"><div class="car">' + CAR_SVG + '</div><div class="om"><b>Wubber</b><small>Verified female driver</small><small>' +
       (S.est ? "~" + S.est.min + " min ride · " + S.est.km + " km" : "Distance checked by the team") + '</small></div><div class="op"><b>' +
       (S.est ? "€" + S.est.lo + "–" + S.est.hi : "Set by team") + "</b><small>" + (S.est ? "estimate" : "") + "</small></div></div>";
     h += '<button type="button" class="row-btn" data-act="go" data-to="account"><span class="ico">' + PERSON_SVG + '</span><span class="rb-text"><b>' +
@@ -1427,7 +1427,7 @@
     "export-rides": function () {
       const dn = function (id) { const d = S.drivers.find(function (x) { return x.id === id; }); return d ? d.name : ""; };
       const fb = function (r, k) { return r.feedback && !r.feedback.skipped ? r.feedback[k] : ""; };
-      exportFile("wdrive-rides.csv", csv(S.rides, [
+      exportFile("wubber-rides.csv", csv(S.rides, [
         ["Requested at", function (r) { return r.createdAt; }], ["Status", function (r) { return r.status; }],
         ["Passenger", function (r) { return r.passengerName; }], ["Pickup", function (r) { return r.pickup; }], ["Destination", function (r) { return r.dropoff; }],
         ["Female driver requested", function (r) { return r.femaleDriver ? "yes" : "no"; }], ["Trusted contact added", function (r) { return r.trustedName || r.trustedPhone ? "yes" : "no"; }],
@@ -1441,7 +1441,7 @@
       ]));
     },
     "export-drivers": function () {
-      exportFile("wdrive-drivers.csv", csv(S.drivers, [
+      exportFile("wubber-drivers.csv", csv(S.drivers, [
         ["Signed up at", function (d) { return d.createdAt; }], ["Name", function (d) { return d.name; }], ["Phone", function (d) { return d.phone; }],
         ["NCC licence", function (d) { return NCC[d.ncc] || ""; }], ["Car", function (d) { return d.car; }], ["Plate", function (d) { return d.plate; }],
         ["Hours", function (d) { return (d.slots || []).join(" / "); }], ["Areas", function (d) { return d.areas; }], ["Status", function (d) { return d.status; }],

@@ -1,6 +1,6 @@
-# WDrive: Torino pilot website
+# Wubber: Torino pilot website
 
-A real website for the WDrive pilot:
+A real website for the Wubber pilot:
 
 - Riders create an account, book a ride on a map of Torino (search down to the house number, drop a pin, or use the phone's GPS), get a 4-digit PIN, follow the ride live, share trip details, use an emergency button and leave feedback.
 - Drivers apply in the app. Once the team has verified them, they see the rides assigned to them and start each trip with the passenger's PIN.
@@ -23,7 +23,7 @@ It is plain HTML, CSS and JavaScript with no build step. Supabase stores the dat
 
 ### 1. Create the database (Supabase)
 
-1. Sign in at [supabase.com](https://supabase.com) and click **New project**. Name it `WDrive`, pick **Central EU (Frankfurt)** and save the database password somewhere safe.
+1. Sign in at [supabase.com](https://supabase.com) and click **New project**. Name it `Wubber`, pick **Central EU (Frankfurt)** and save the database password somewhere safe.
 2. When the project is ready, open **SQL Editor** → **New query**. Open `supabase/setup.sql`, copy everything, paste it in and click **Run**. You should see "Success. No rows returned".
 3. For the pilot, go to **Authentication → Sign In / Providers → Email** and turn **off** "Confirm email". (Leave it on if you want people to confirm their email address first. Step 4 then matters more.)
 4. Go to **Project Settings → API** (sometimes called **Data API**) and keep this page open. You need the **Project URL** and the **anon public** key (also called the publishable key).

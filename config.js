@@ -1,5 +1,5 @@
 /*
- * WDrive: connection settings.
+ * Wubber: connection settings.
  *
  * Project URL and the "anon public" key from Supabase (Project Settings → API Keys).
  * The anon key is meant to be public: the database's security rules decide what

@@ -3,12 +3,14 @@
   --bg: #FFFFFF;
   --surface: #FFF2F7;
   --surface-2: #FFE3EF;
-  --line: #F2C6D9;
-  --ink: #3A1029;
-  --muted: #7E4964;
+  --line: #EDC8DF;
+  --ink: #2E1242;
+  --muted: #6E4B7C;
   --accent: #C42A6F;
   --accent-ink: #FFFFFF;
   --accent-soft: #FFD9E9;
+  --brand: #540CAA;
+  --brand-soft: #EFE6FA;
   --danger: #B8212B;
   --danger-soft: #FDE2E4;
   --ok: #17704D;
@@ -353,3 +355,22 @@ body.locked .handle { display: none; }
 /* ===== Real website additions ===== */
 #auth-loading { padding: 24px 0; text-align: center; }
 .gps-row .ico { color: var(--accent); }
+
+/* ===== Wubber logo and colours ===== */
+.auth-logo { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0 8px; }
+.auth-logo img { width: 180px; height: auto; display: block; }
+.brand-logo { height: 36px; width: auto; display: block; flex: none; }
+.brand-name { color: var(--brand); }
+.map-brand { position: absolute; z-index: 20; top: calc(14px + env(safe-area-inset-top, 0px)); left: calc(72px + env(safe-area-inset-left, 0px));
+  height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 18px 0 12px; border-radius: 24px; background: var(--bg); box-shadow: var(--shadow);
+  font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: var(--brand); }
+.map-brand img { height: 30px; width: auto; display: block; }
+body.locked .map-brand { display: none; }
+.greet, .sv-head h2, .live-head h2, h1 { color: var(--ink); }
+.mk-a { background: var(--brand); }
+.r-dot { background: var(--brand); box-shadow: inset 0 0 0 3.5px var(--brand), inset 0 0 0 6px #FFFFFF; }
+.ride-opt { border-color: var(--brand); }
+.ride-opt .car { background: var(--brand-soft); color: var(--brand); }
+.promise svg { color: var(--brand); }
+.dr-item[aria-current=page] { color: var(--brand); background: var(--brand-soft); }
+.seg button[aria-selected=true] { color: var(--brand); }

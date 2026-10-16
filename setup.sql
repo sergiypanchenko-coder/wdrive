@@ -1,5 +1,5 @@
 -- =====================================================================
--- WDrive: database setup
+-- Wubber: database setup
 -- Paste this whole file into Supabase → SQL Editor → New query → Run.
 -- Run it once, on a fresh project.
 -- =====================================================================
