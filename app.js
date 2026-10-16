@@ -669,7 +669,7 @@
   });
 
   /* ---------- Navigation ---------- */
-  const PAGES = { drive: "Drive with us", team: "Pilot dashboard", wait: "Waiting list", account: "Your account" };
+  const PAGES = { drive: "Drive with us", team: "Pilot dashboard", wait: "Waiting list", socials: "Socials", account: "Your account" };
   function go(t) {
     closeDrawer();
     if (isLocked() || (t === "team" && !isTeam())) t = "ride";
@@ -678,7 +678,7 @@
     const ride = t === "ride";
     $("#ride-screen").hidden = !ride;
     $("#page").hidden = ride;
-    ["drive", "team", "wait", "account"].forEach(function (k) { $("#tab-" + k).hidden = k !== t; });
+    ["drive", "team", "wait", "socials", "account"].forEach(function (k) { $("#tab-" + k).hidden = k !== t; });
     if (!ride) $("#page-title").textContent = PAGES[t];
     $$(".dr-item").forEach(function (b) { if (b.dataset.to === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     window.scrollTo(0, 0);

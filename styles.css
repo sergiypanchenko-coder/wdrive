@@ -374,3 +374,6 @@ body.locked .map-brand { display: none; }
 .promise svg { color: var(--brand); }
 .dr-item[aria-current=page] { color: var(--brand); background: var(--brand-soft); }
 .seg button[aria-selected=true] { color: var(--brand); }
+.social-card { flex-direction: row; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); }
+.social-card:hover { border-color: var(--brand); }
+.social-ico { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; }
