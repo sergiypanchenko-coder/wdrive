@@ -1,14 +1,11 @@
 /*
  * WDrive: connection settings.
  *
- * In Supabase, open your project → Project Settings → API (or "Data API").
- * Copy the "Project URL" and the "anon public" key (also called the
- * publishable key) into the two lines below, keeping the quotes.
- *
- * The anon key is meant to be public: the database's security rules
- * decide what each person can see. Never put the "service_role" key here.
+ * Project URL and the "anon public" key from Supabase (Project Settings → API Keys).
+ * The anon key is meant to be public: the database's security rules decide what
+ * each person can see. Never put the "service_role" or secret key here.
  */
 window.WSR_CONFIG = {
-  supabaseUrl: "https://YOUR-PROJECT.supabase.co",
-  supabaseAnonKey: "PASTE-YOUR-ANON-PUBLIC-KEY-HERE"
+  supabaseUrl: "https://qcrlmxrvmmvccwutztzn.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjcmxteHJ2bW12Y2N3dXR6dHpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODIyODIsImV4cCI6MjEwNzU1ODI4Mn0.5PnkaHVWM_KsYsFc4dvkchfAvo4wwuX29tAy9QMMB2k"
 };
