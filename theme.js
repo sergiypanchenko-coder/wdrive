@@ -14,7 +14,7 @@
     root.setAttribute("data-theme", t);
     window.WUBBER_THEME = t;
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", t === "dark" ? "#17101F" : "#540CAA");
+    if (meta) meta.setAttribute("content", t === "dark" ? "#17101F" : "#FFFFFF");
     var imgs = document.querySelectorAll("img[data-logo]");
     for (var i = 0; i < imgs.length; i++) imgs[i].src = "logo-" + imgs[i].getAttribute("data-logo") + (t === "dark" ? "-dark" : "") + ".png";
     var bs = document.querySelectorAll(".theme-btn[data-theme-set]");
