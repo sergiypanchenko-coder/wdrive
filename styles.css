@@ -520,3 +520,17 @@ p.fine.car-live { font-weight: 500; }
 .dr-item:hover { background-color: var(--surface); }
 /* the ride steps fill smoothly */
 .step i { transition: background-color .4s ease; }
+
+/* ---------- Bottom panel: drag the handle to hide it and see the map ---------- */
+.handle-bar { position: sticky; top: -6px; z-index: 3; display: block; width: calc(100% + 36px); margin: -6px -18px 2px; padding: 10px 0 12px; border: 0; background: var(--bg); border-radius: 22px 22px 0 0; cursor: grab; touch-action: none; }
+.handle-bar .handle { display: block; margin: 0 auto; width: 44px; height: 5px; transition: background-color .15s ease, width .2s ease; }
+.handle-bar:hover .handle, .handle-bar:focus-visible .handle { background: var(--muted); }
+.handle-bar:active { cursor: grabbing; }
+@media (min-width: 900px) { .sheet-main .handle-bar { display: none; } }
+body.locked .handle-bar { display: none; }
+@media (max-width: 899px) {
+  .sheet-main { transition: transform .34s var(--ease), box-shadow .2s ease; will-change: transform; }
+  .sheet-main.dragging { transition: none; }
+  .sheet-main.collapsed { transform: translateY(calc(100% - 80px)); overflow: hidden; cursor: pointer; }
+  .sheet-main.collapsed .handle { width: 56px; background: var(--muted); }
+}

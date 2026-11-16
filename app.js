@@ -536,7 +536,7 @@
   const MAPS = { main: null, mainStore: {}, mainKey: null, picker: null };
   function sheetPad() {
     if (window.innerWidth >= 900) return { tl: [460, 90], br: [48, 48] };
-    const h = $("#sheet").offsetHeight || 320;
+    const h = SHEET.collapsed ? SHEET_PEEK : ($("#sheet").offsetHeight || 320);
     const H = $("#ride-screen").offsetHeight || window.innerHeight;
     const top = 76, bottom = Math.min(h + 24, Math.max(40, H - top - 110));
     return { tl: [36, top], br: [36, bottom] };
@@ -843,7 +843,58 @@
   const HOME_SPOTS = ["ESCP Business School, Turin campus", "Stazione Porta Nuova", "Politecnico di Torino", "Murazzi del Po"];
 
   function greeting() { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; }
-  function showView(v) { ["home", "choose", "auth", "live", "feedback"].forEach(function (k) { $("#sv-" + k).hidden = k !== v; }); }
+  /* ---------- Pull the bottom panel down to see the map ---------- */
+  const SHEET_PEEK = 80;
+  const SHEET = { collapsed: false, view: null, drag: null };
+  function setSheetCollapsed(c, quiet) {
+    const el = $("#sheet");
+    if (window.innerWidth >= 900 || document.body.classList.contains("locked")) c = false;
+    const changed = SHEET.collapsed !== c;
+    SHEET.collapsed = c;
+    el.classList.toggle("collapsed", c);
+    el.style.transform = "";
+    if (c) el.scrollTop = 0;
+    const b = $("#sheet-handle");
+    b.setAttribute("aria-expanded", c ? "false" : "true");
+    b.setAttribute("aria-label", c ? "Show panel" : "Hide panel");
+    if (changed && !quiet) { MAPS.mainKey = null; setTimeout(function () { if (MAPS.main) MAPS.main.invalidateSize(); renderRide(); }, 330); }
+  }
+  function bindSheetDrag() {
+    const el = $("#sheet"), handle = $("#sheet-handle");
+    handle.addEventListener("click", function (e) { e.preventDefault(); if (!SHEET.dragged) setSheetCollapsed(!SHEET.collapsed); SHEET.dragged = false; });
+    el.addEventListener("pointerdown", function (e) {
+      if (window.innerWidth >= 900 || document.body.classList.contains("locked")) return;
+      const top = el.getBoundingClientRect().top;
+      const onHandle = e.target.closest && e.target.closest("#sheet-handle");
+      if (!onHandle && !(SHEET.collapsed || (e.clientY - top < 44 && el.scrollTop <= 0 && !e.target.closest("button, a, input, textarea, label")))) return;
+      const max = el.offsetHeight - SHEET_PEEK;
+      SHEET.drag = { h: !!onHandle, id: e.pointerId, y0: e.clientY, t0: Date.now(), base: SHEET.collapsed ? max : 0, max: max, off: SHEET.collapsed ? max : 0, moved: false, lastY: e.clientY, lastT: Date.now(), v: 0 };
+    });
+    window.addEventListener("pointermove", function (e) {
+      const d = SHEET.drag; if (!d || e.pointerId !== d.id) return;
+      const dy = e.clientY - d.y0;
+      if (!d.moved && Math.abs(dy) < 6) return;
+      if (!d.moved) { d.moved = true; el.classList.add("dragging"); try { el.setPointerCapture(e.pointerId); } catch (x) {} }
+      e.preventDefault();
+      d.off = Math.max(0, Math.min(d.max, d.base + dy));
+      const now = Date.now(); d.v = (e.clientY - d.lastY) / Math.max(1, now - d.lastT); d.lastY = e.clientY; d.lastT = now;
+      el.style.transform = "translateY(" + d.off + "px)";
+    }, { passive: false });
+    function end(e) {
+      const d = SHEET.drag; if (!d || (e && e.pointerId !== d.id)) return;
+      SHEET.drag = null;
+      el.classList.remove("dragging");
+      if (!d.moved) { if (SHEET.collapsed && !d.h) setSheetCollapsed(false); return; }
+      SHEET.dragged = true; setTimeout(function () { SHEET.dragged = false; }, 50);
+      const collapse = d.v > 0.45 ? true : d.v < -0.45 ? false : d.off > d.max / 2;
+      setSheetCollapsed(collapse);
+    }
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+  }
+
+  function showView(v) {
+    if (SHEET.view !== v) { SHEET.view = v; if (SHEET.collapsed) setSheetCollapsed(false); } ["home", "choose", "auth", "live", "feedback"].forEach(function (k) { $("#sv-" + k).hidden = k !== v; }); }
   /* ---------- Accounts (Supabase Auth) ---------- */
   function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || "").trim()); }
   function phoneOk(v) { const d = String(v || "").replace(/\D/g, ""); return d.length >= 8 && d.length <= 15; }
@@ -1848,6 +1899,7 @@
     document.addEventListener("submit", function (e) { if (e.target.id === "profile-form") saveProfile(e); });
     $("#drawer").addEventListener("click", function (e) { if (e.target.id === "drawer") closeDrawer(); });
     $("#drv-form").addEventListener("submit", driverSignup);
+    bindSheetDrag();
     window.addEventListener("wubber:lang", function () { renderAll(); });
     window.addEventListener("wubber:theme", function () {
       [MAPS.main, MAPS.picker].forEach(function (m) { if (m) m.fire("viewreset"); });

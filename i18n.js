@@ -319,6 +319,7 @@
     "price by hand": "prezzo da definire",
     "estimate": "stima",
     "Rate your driver": "Valuta la tua autista",
+    "Hide panel": "Nascondi il pannello", "Show panel": "Mostra il pannello",
     "Home": "Casa", "University": "Università", "Work": "Lavoro",
     "Saved places": "Luoghi salvati",
     "Book these with one tap from the home screen.": "Prenotali con un tocco dalla schermata principale.",
