@@ -1,7 +1,8 @@
 /* Wubber: English / Italian.
    The app is written in English. When Italian is chosen, this file swaps the
    text on screen for its Italian version as it appears. To fix a translation,
-   edit the line in D below (English on the left, Italian on the right). */
+   edit the line in D below (English on the left, Italian on the right).
+   Switch language with the flags at the bottom of the menu; it changes at once. */
 (function () {
   "use strict";
   var KEY = "wubber.lang";
@@ -9,26 +10,6 @@
   function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
   var saved = get();
   var lang = saved === "it" || saved === "en" ? saved : ((navigator.language || "").toLowerCase().indexOf("it") === 0 ? "it" : "en");
-  window.WUBBER_LANG = lang;
-  document.documentElement.lang = lang;
-  document.documentElement.setAttribute("data-lang", lang);
-
-  function setupToggles() {
-    var bs = document.querySelectorAll("[data-lang-toggle]");
-    for (var i = 0; i < bs.length; i++) {
-      bs[i].textContent = lang === "it" ? "English" : "Italiano";
-      bs[i].setAttribute("data-no-translate", "");
-    }
-  }
-  document.addEventListener("click", function (e) {
-    var b = e.target.closest && e.target.closest("[data-lang-toggle]");
-    if (!b) return;
-    e.preventDefault();
-    set(lang === "it" ? "en" : "it");
-    location.reload();
-  });
-  setupToggles();
-  if (lang !== "it") return;
 
   var D = {
     // Ride screen
@@ -386,40 +367,84 @@
     var lead = s.match(/^\s*/)[0], trail = s.match(/\s*$/)[0];
     return lead + out + trail;
   }
-  window.WUBBER_T = function (s) { return tr(String(s)); };
+  window.WUBBER_T = function (s) { return lang === "it" ? tr(String(s)) : String(s); };
 
+  // Remember the English we replaced, so switching back to English is instant.
+  var done = new Set(), REC = "__wubberI18n";
   var ATTRS = ["placeholder", "aria-label", "title", "alt"];
-  function skip(el) { return !el || el.nodeName === "SCRIPT" || el.nodeName === "STYLE" || el.nodeName === "TEXTAREA" || (el.closest && el.closest("[data-no-translate]")); }
   // Only used for placeholders, so a driver whose car really is a grey Corolla keeps her own words.
   var PH = { "Grey Toyota Corolla": "Toyota Corolla grigia", "name@mail.com": "nome@mail.com" };
+  function skip(el) { return !el || el.nodeName === "SCRIPT" || el.nodeName === "STYLE" || el.nodeName === "TEXTAREA" || (el.closest && el.closest("[data-no-translate]")); }
   function doAttrs(el) {
     for (var i = 0; i < ATTRS.length; i++) {
-      var v = el.getAttribute(ATTRS[i]);
-      if (v) { var n = ATTRS[i] === "placeholder" && PH[v] ? PH[v] : tr(v); if (n !== v) el.setAttribute(ATTRS[i], n); }
+      var k = ATTRS[i], v = el.getAttribute(k);
+      if (!v) continue;
+      var rec = el[REC] && el[REC][k];
+      if (rec && v === rec.tr) continue;
+      var n = k === "placeholder" && PH[v] ? PH[v] : tr(v);
+      if (n !== v) { el[REC] = el[REC] || {}; el[REC][k] = { orig: v, tr: n }; done.add(el); el.setAttribute(k, n); }
     }
   }
   function walk(node) {
     if (node.nodeType === 3) {
       if (skip(node.parentNode)) return;
-      var v = node.nodeValue, n = tr(v);
-      if (n !== v) node.nodeValue = n;
+      var v = node.nodeValue, rec = node[REC];
+      if (rec && v === rec.tr) return;
+      var n = tr(v);
+      if (n !== v) { node[REC] = { orig: v, tr: n }; done.add(node); node.nodeValue = n; }
       return;
     }
     if (node.nodeType !== 1 || skip(node)) return;
     doAttrs(node);
     for (var c = node.firstChild; c; c = c.nextSibling) walk(c);
   }
-  function start() {
-    document.title = tr(document.title);
-    walk(document.body);
-    new MutationObserver(function (list) {
-      for (var i = 0; i < list.length; i++) {
-        var m = list[i];
-        if (m.type === "childList") { for (var j = 0; j < m.addedNodes.length; j++) walk(m.addedNodes[j]); }
-        else if (m.type === "characterData") walk(m.target);
-        else if (m.type === "attributes" && !skip(m.target)) doAttrs(m.target);
-      }
-    }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+  function restore() {
+    done.forEach(function (node) {
+      var rec = node[REC];
+      if (!rec) return;
+      if (node.nodeType === 3) { if (node.nodeValue === rec.tr) node.nodeValue = rec.orig; }
+      else for (var k in rec) { if (node.getAttribute(k) === rec[k].tr) node.setAttribute(k, rec[k].orig); }
+      node[REC] = null;
+    });
+    done.clear();
   }
-  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+  var obs = new MutationObserver(function (list) {
+    for (var i = 0; i < list.length; i++) {
+      var m = list[i];
+      if (m.type === "childList") { for (var j = 0; j < m.addedNodes.length; j++) walk(m.addedNodes[j]); }
+      else if (m.type === "characterData") walk(m.target);
+      else if (m.type === "attributes" && !skip(m.target)) doAttrs(m.target);
+    }
+  });
+  var titleEN = document.title;
+
+  function apply(l, announce) {
+    lang = l;
+    window.WUBBER_LANG = l;
+    document.documentElement.lang = l;
+    document.documentElement.setAttribute("data-lang", l);
+    var fs = document.querySelectorAll(".flag[data-lang]");
+    for (var i = 0; i < fs.length; i++) fs[i].setAttribute("aria-pressed", fs[i].getAttribute("data-lang") === l ? "true" : "false");
+    if (!document.body) return;
+    if (l === "it") {
+      document.title = tr(titleEN);
+      walk(document.body);
+      obs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+    } else {
+      obs.disconnect();
+      restore();
+      document.title = titleEN;
+    }
+    if (announce) { try { window.dispatchEvent(new CustomEvent("wubber:lang", { detail: l })); } catch (e) {} }
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest(".flag[data-lang]");
+    if (!b) return;
+    e.preventDefault();
+    var l = b.getAttribute("data-lang");
+    set(l);
+    if (l !== lang) apply(l, true);
+  });
+  window.WUBBER_LANG = lang;
+  if (document.body) apply(lang, false); else document.addEventListener("DOMContentLoaded", function () { apply(lang, false); });
 })();

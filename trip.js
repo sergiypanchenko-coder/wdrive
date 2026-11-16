@@ -99,5 +99,6 @@
     }
   }
   document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+  window.addEventListener("wubber:lang", load);
   load();
 })();

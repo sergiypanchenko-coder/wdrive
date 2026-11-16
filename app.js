@@ -1666,6 +1666,7 @@
     document.addEventListener("submit", function (e) { if (e.target.id === "profile-form") saveProfile(e); });
     $("#drawer").addEventListener("click", function (e) { if (e.target.id === "drawer") closeDrawer(); });
     $("#drv-form").addEventListener("submit", driverSignup);
+    window.addEventListener("wubber:lang", function () { renderAll(); });
     $("#d-photo").addEventListener("change", function () {
       const f = this.files && this.files[0], box = $("#d-photo-preview");
       box.innerHTML = "";
