@@ -56,6 +56,11 @@
   }
   function hhmm(iso) { return iso ? new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""; }
   function first(name) { return String(name || "").trim().split(/\s+/)[0] || "Your driver"; }
+  function avatarHtml(d, cls) {
+    const c = "avatar" + (cls ? " " + cls : "");
+    if (d && d.photoUrl) return '<div class="' + c + ' has-photo"><img src="' + esc(d.photoUrl) + '" alt="Photo of ' + esc(first(d.name)) + '"></div>';
+    return '<div class="' + c + '" aria-hidden="true">' + esc(initials(d && d.name)) + "</div>";
+  }
   function initials(name) { const p = String(name || "?").trim().split(/\s+/); return ((p[0] || "?")[0] + (p[1] ? p[1][0] : "")).toUpperCase(); }
   function norm(s) { return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
   function pct(n, d) { return d ? Math.round((n / d) * 100) : 0; }
@@ -95,6 +100,7 @@
   function apiConfigured() { return (/^https:\/\/[^\s]+$/.test(API.url) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(API.url)) && API.url.indexOf("YOUR-PROJECT") === -1 && API.key.length > 30; }
   const SESSION_KEY = "wsr.session";
   let SESSION = null;
+  const SITE = location.origin + "/";
   try { SESSION = JSON.parse(lsGet(SESSION_KEY) || "null"); } catch (e) { SESSION = null; }
   function saveSession(s) { SESSION = s; lsSet(SESSION_KEY, s ? JSON.stringify(s) : null); }
   function apiError(message, code, status) { const e = new Error(message); e.code = code; e.status = status; return e; }
@@ -701,11 +707,50 @@
   }
   function driverOf(r) { return r && r.driverId ? S.drivers.find(function (d) { return d.id === r.driverId; }) : null; }
 
+  function shareLink(r) { return r && r.shareToken ? SITE + "trip.html?t=" + r.shareToken : ""; }
   function shareText(r) {
     const d = driverOf(r);
+    if (window.WUBBER_LANG === "it") {
+      return "Sono su una corsa Wubber: " + r.pickup + " → " + r.dropoff + ". " +
+        (d ? "Autista: " + first(d.name) + (d.car ? ", " + d.car : "") + (d.plate ? ", targa " + d.plate : "") + ". " : "") +
+        (shareLink(r) ? "Segui il mio viaggio dal vivo: " + shareLink(r) : "Prenotata alle " + hhmm(r.createdAt) + ".");
+    }
     return "I'm on a Wubber ride: " + r.pickup + " → " + r.dropoff + ". " +
-      (d ? "Driver: " + d.name + (d.car ? ", " + d.car : "") + (d.plate ? ", plate " + d.plate : "") + ". " : "Driver not assigned yet. ") +
-      "Ride PIN " + r.pin + ". Booked at " + hhmm(r.createdAt) + ".";
+      (d ? "Driver: " + first(d.name) + (d.car ? ", " + d.car : "") + (d.plate ? ", plate " + d.plate : "") + ". " : "") +
+      (shareLink(r) ? "Follow my trip live: " + shareLink(r) : "Booked at " + hhmm(r.createdAt) + ".");
+  }
+
+  /* ---------- Live location for the share link ---------- */
+  const LOC = { watch: null, last: 0, ride: null };
+  function sharingIds() { try { return JSON.parse(lsGet("wubber.locshare") || "[]"); } catch (e) { return []; } }
+  function isSharing(r) { return !!(r && sharingIds().indexOf(r.id) !== -1); }
+  function startSharing(r) {
+    const ids = sharingIds().filter(function (x) { return x !== r.id; }).slice(-4);
+    ids.push(r.id);
+    lsSet("wubber.locshare", JSON.stringify(ids));
+    syncLocShare();
+  }
+  function stopSharing(r) {
+    lsSet("wubber.locshare", JSON.stringify(sharingIds().filter(function (x) { return x !== r.id; })));
+    syncLocShare();
+  }
+  function syncLocShare() {
+    const r = currentRide();
+    const on = !!(r && isSharing(r) && (r.status === "assigned" || r.status === "on_trip") && navigator.geolocation && S.account);
+    if (!on) {
+      if (LOC.watch != null) { navigator.geolocation.clearWatch(LOC.watch); LOC.watch = null; LOC.ride = null; }
+      return;
+    }
+    if (LOC.watch != null && LOC.ride === r.id) return;
+    if (LOC.watch != null) navigator.geolocation.clearWatch(LOC.watch);
+    LOC.ride = r.id; LOC.last = 0;
+    LOC.watch = navigator.geolocation.watchPosition(function (pos) {
+      if (Date.now() - LOC.last < 20000) return;
+      LOC.last = Date.now();
+      db.rpc("rider_location", { p_ride: LOC.ride, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude }).catch(function (e) { console.warn(e); });
+    }, function (err) {
+      if (err && err.code === 1) { toast("Location is blocked, so the link shows your ride but not where you are.", true, 7000); }
+    }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
   }
 
   const CAR_SVG = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16.5h16v-3.2c0-.8-.5-1.5-1.2-1.8l-1.6-.6-1.8-3.4A2 2 0 0013.6 6.5h-3.2a2 2 0 00-1.8 1L6.8 10.9l-1.6.6C4.5 11.8 4 12.5 4 13.3v3.2z"/><circle cx="7.5" cy="16.5" r="1.7"/><circle cx="16.5" cy="16.5" r="1.7"/><path d="M7 11h10"/></svg>';
@@ -732,7 +777,7 @@
     const pw = $("#su-pass").value, pw2 = $("#su-pass2").value;
     if (pw.length < 8) miss.push("a password of at least 8 characters");
     else if (pw !== pw2) miss.push("the same password twice");
-    if (!$("#su-terms").checked) miss.push("agreement to join the pilot");
+    if (!$("#su-terms").checked) miss.push("agreement to the privacy notice");
     return miss;
   }
   function checkSignup() {
@@ -816,7 +861,7 @@
     const tn = $("#su-tname").value.trim(), tp = $("#su-tphone").value.trim();
     const btn = $("#su-submit"); busy(btn, true, "Creating your account…");
     try {
-      const j = await authFetch("signup", { email: email, password: pw, data: { name: name, phone: phone, trusted_name: tn, trusted_phone: tp } });
+      const j = await authFetch("signup?redirect_to=" + encodeURIComponent(SITE), { email: email, password: pw, data: { name: name, phone: phone, trusted_name: tn, trusted_phone: tp, privacy_accepted_at: nowISO() } });
       $("#signup-form").reset();
       if (j.access_token) {
         saveSession(toSession(j));
@@ -842,7 +887,7 @@
     if (!isEmail(email)) { toast("Enter your email address.", true); return; }
     const btn = $("#fp-submit"); busy(btn, true, "Sending…");
     try {
-      await authFetch("recover", { email: email });
+      await authFetch("recover?redirect_to=" + encodeURIComponent(SITE), { email: email });
       toast("If an account exists for that email, we've sent a link to reset your password.", false, 8000);
       setAuthMode("login");
     } catch (err) { toast(authMsg(err), true); }
@@ -983,12 +1028,12 @@
     if (r.status !== "on_trip") html += '<p class="fine">Tell your driver your PIN. She can only start the trip with it.</p>';
     if (r.sos && !r.sosResolved) html += '<div class="alert">Pilot team alerted at ' + esc(hhmm(r.sosAt)) + ". Call 112 if you are in danger.</div>";
     if (d) {
-      html += '<div class="card"><div class="driver"><div class="avatar" aria-hidden="true">' + esc(initials(d.name)) + '</div><div class="stack" style="gap:4px;min-width:0"><b style="font-size:18px">' + esc(d.name) + '</b><div class="badges"><span class="badge">' + CHECK + "Identity checked</span>" +
+      html += '<div class="card"><div class="driver">' + avatarHtml(d) + '<div class="stack" style="gap:4px;min-width:0"><b style="font-size:18px">' + esc(d.name) + '</b><div class="badges"><span class="badge">' + CHECK + "Identity checked</span>" +
         (d.ncc === "yes" ? '<span class="badge">' + CHECK + "NCC licence</span>" : "") + "</div></div></div>" +
         '<div class="kv"><div><span class="lbl">Car</span><b>' + esc(d.car || "Ask your driver") + '</b></div><div><span class="lbl">Plate</span><b>' + esc(d.plate || "—") + "</b></div>" +
         '<div><span class="lbl">Price</span><b>' + (r.fare ? "€" + esc(r.fare) + " agreed" : (r.fareEst ? "€" + r.fareEst.lo + "–" + r.fareEst.hi + " estimate" : "Set by the team")) + "</b></div>" +
         '<div><span class="lbl">Driver phone</span><b>' + esc(d.phone || "—") + "</b></div></div>" +
-        '<p class="fine">Check the plate before you get in.</p></div>';
+        '<p class="fine">' + (d.photoUrl ? "Check her face and the plate before you get in." : "Check the plate before you get in.") + "</p></div>";
     } else {
       html += '<div class="trip-rows"><span class="ico-col"><i class="r-dot"></i></span><div class="trip-row" style="cursor:default"><small>Pickup</small><b>' + esc(r.pickup) + "</b></div>" +
         '<span class="ico-col"><i class="r-line"></i></span><span></span><span class="ico-col"><i class="r-sq"></i></span><div class="trip-row" style="cursor:default"><small>Destination</small><b>' + esc(r.dropoff) + "</b></div></div>" +
@@ -998,12 +1043,21 @@
       '<button type="button" class="act" data-act="copy-share">' + SHARE_SVG + "Share trip</button>" +
       (d && d.phone ? '<a class="act" href="tel:' + esc(String(d.phone).replace(/[^\d+]/g, "")) + '">' + PHONE_SVG + "Call " + esc(first(d.name)) + "</a>" : '<button type="button" class="act" disabled style="opacity:.5">' + PHONE_SVG + "Call driver</button>") +
       '<button type="button" class="act red" data-act="open-sos">' + SHIELD_SVG + "Safety</button></div>";
+    const tp = S.account && S.account.trustedPhone ? String(S.account.trustedPhone).replace(/\D/g, "") : "";
+    if (r.status === "requested" || r.status === "assigned" || r.status === "on_trip") {
+      if (isSharing(r)) {
+        html += '<div class="note share-note"><b>Your trip is shared live.</b> Anyone with your link sees your ride and where you are until 1 hour after you arrive. <button type="button" class="linkbtn" data-act="stop-share">Stop sharing my location</button></div>';
+      } else if (tp && S.account.trustedName) {
+        html += '<button type="button" class="btn btn-ghost btn-block" data-act="wa-share">Send live trip to ' + esc(first(S.account.trustedName)) + " on WhatsApp</button>";
+      }
+    }
     html += '<textarea class="copybox" id="share-box" readonly hidden aria-label="Trip details">' + esc(shareText(r)) + "</textarea>";
     if (r.status === "requested" || r.status === "assigned") html += '<button type="button" class="linkbtn" data-act="cancel-ride">Cancel ride</button>';
     return html;
   }
 
   function renderRide() {
+    syncLocShare();
     if ($("#ride-screen").hidden) return;
     if (isLocked()) {
       document.body.classList.add("locked");
@@ -1085,7 +1139,7 @@
   /* ---------- Rows from the database → objects the screens use ---------- */
   const RIDE_COLS = "id,created_at,rider_id,passenger_name,passenger_phone,pickup,pickup_lat,pickup_lng,dropoff,dropoff_lat,dropoff_lng," +
     "trusted_name,trusted_phone,fare_lo,fare_hi,km,status,driver_id,fare,eta_min,assigned_at,started_at,completed_at,cancelled_at,cancelled_by," +
-    "sos,sos_at,sos_resolved,sos_resolved_at,passenger_dismissed,feedback";
+    "sos,sos_at,sos_resolved,sos_resolved_at,passenger_dismissed,feedback,share_token,rider_loc_at";
   function rowToRide(x) {
     return {
       id: x.id, createdAt: x.created_at, accountId: x.rider_id,
@@ -1098,11 +1152,12 @@
       status: x.status, driverId: x.driver_id, fare: x.fare, etaMin: x.eta_min,
       assignedAt: x.assigned_at, startedAt: x.started_at, completedAt: x.completed_at, cancelledAt: x.cancelled_at, cancelledBy: x.cancelled_by,
       sos: !!x.sos, sosAt: x.sos_at, sosResolved: !!x.sos_resolved, sosResolvedAt: x.sos_resolved_at,
-      passengerDismissed: !!x.passenger_dismissed, feedback: x.feedback || null, femaleDriver: true
+      passengerDismissed: !!x.passenger_dismissed, feedback: x.feedback || null, femaleDriver: true,
+      shareToken: x.share_token || null, riderLocAt: x.rider_loc_at || null
     };
   }
   function rowToDriver(x) {
-    return { id: x.id, userId: x.user_id, name: x.name, phone: x.phone, ncc: x.ncc, car: x.car, plate: x.plate, slots: x.slots || [], areas: x.areas, status: x.status, createdAt: x.created_at };
+    return { id: x.id, userId: x.user_id, name: x.name, phone: x.phone, ncc: x.ncc, car: x.car, plate: x.plate, photoUrl: x.photo_url || "", slots: x.slots || [], areas: x.areas, status: x.status, createdAt: x.created_at };
   }
 
   /* ---------- DRIVE ---------- */
@@ -1127,7 +1182,8 @@
 
     const statusChip = me.status === "verified" ? '<span class="chip verified">Verified</span>' : me.status === "rejected" ? '<span class="chip rejected">Not approved</span>' : '<span class="chip pending">Waiting for verification</span>';
     let html = '<div class="stack"><div class="row" style="justify-content:space-between"><h1>Hi ' + esc(first(me.name)) + "</h1>" + statusChip + "</div>" +
-      '<p class="muted">' + esc([me.car, me.plate].filter(Boolean).join(" · ") || "No car details yet") + "</p></div>";
+      '<div class="driver">' + avatarHtml(me) + '<div class="stack" style="gap:4px;min-width:0"><p class="muted">' + esc([me.car, me.plate].filter(Boolean).join(" · ") || "No car details yet") + "</p>" +
+      '<label class="linkbtn photo-change">' + (me.photoUrl ? "Change your photo" : "Add your photo") + '<input type="file" accept="image/*" id="drv-photo-change" hidden></label></div></div></div>';
 
     if (me.status !== "verified") {
       html += '<div class="card"><h3>' + (me.status === "rejected" ? "We can't add you to this pilot" : "Next step: meet the pilot team") + '</h3><p class="fine">' +
@@ -1157,6 +1213,48 @@
     paint(home, html);
   }
 
+  /* ---------- Driver photo ---------- */
+  function shrinkImage(file) {
+    return new Promise(function (resolve, reject) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        const max = 640, s = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { b ? resolve(b) : reject(new Error("image")); }, "image/jpeg", 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("image")); };
+      img.src = url;
+    });
+  }
+  async function uploadPhoto(file) {
+    if (!file || !/^image\//.test(file.type)) throw new Error("Choose a photo (JPG or PNG).");
+    const blob = await shrinkImage(file);
+    const path = S.account.id + "/" + Date.now() + ".jpg";
+    const tok = await accessToken();
+    let r;
+    try {
+      r = await fetch(API.url + "/storage/v1/object/driver-photos/" + path, {
+        method: "POST", headers: { apikey: API.key, Authorization: "Bearer " + tok, "Content-Type": "image/jpeg", "x-upsert": "true" }, body: blob
+      });
+    } catch (e) { throw new Error("Couldn't upload the photo. Check your connection."); }
+    if (!r.ok) throw new Error("Couldn't upload the photo (" + r.status + ").");
+    return API.url + "/storage/v1/object/public/driver-photos/" + path;
+  }
+  async function changeDriverPhoto(input) {
+    const me = myDriverRecord(); const file = input.files && input.files[0];
+    if (!me || !file) return;
+    toast("Uploading your photo…");
+    try {
+      const url = await uploadPhoto(file);
+      await write(function () { return db.update("drivers", "id=eq." + me.id, { photo_url: url }); }, "Photo saved");
+    } catch (err) { toast(err.message, true); }
+    input.value = "";
+  }
+
   async function driverSignup(e) {
     e.preventDefault();
     if (!S.account) { toast("Log in first.", true); return; }
@@ -1165,18 +1263,25 @@
     const nccEl = f.querySelector('input[name="ncc"]:checked');
     if (!name || !phone) { toast("Add your name and phone number.", true); return; }
     if (!nccEl) { toast("Tell us whether you hold an NCC licence.", true); return; }
+    const photo = $("#d-photo").files && $("#d-photo").files[0];
+    if (!photo) { toast("Add a photo of yourself. Passengers see it before they get in.", true); return; }
     if (!$("#d-consent").checked) { toast("Tick the consent box to continue.", true); return; }
+    const sub = f.querySelector('button[type="submit"]'); busy(sub, true, "Uploading your photo…");
+    let photoUrl = "";
+    try { photoUrl = await uploadPhoto(photo); }
+    catch (err) { toast(err.message, true); busy(sub, false, "Join the pilot"); return; }
+    busy(sub, false, "Join the pilot");
     const row = {
       id: uuid(), user_id: S.account.id, name: name, phone: phone, ncc: nccEl.value,
       car: $("#d-car").value.trim(), plate: $("#d-plate").value.trim().toUpperCase(),
       slots: $$('input[name="slots"]:checked', f).map(function (i) { return i.value; }),
-      areas: $("#d-areas").value.trim()
+      areas: $("#d-areas").value.trim(), photo_url: photoUrl
     };
     S.pendingDriver = rowToDriver(Object.assign({ status: "pending", created_at: nowISO() }, row));
     renderDrive();
     const ok = await write(function () { return db.insert("drivers", row); }, "You're signed up. The team will be in touch.");
     if (!ok) { S.pendingDriver = null; renderDrive(); }
-    else f.reset();
+    else { f.reset(); $("#d-photo-preview").innerHTML = ""; }
   }
 
   /* ---------- TEAM ---------- */
@@ -1287,6 +1392,7 @@
     if (!S.drivers.length) dh = '<div class="empty">No drivers yet. Sign-ups from the Drive tab appear here for you to verify.</div>';
     dh += pending.map(function (d) {
       return '<article class="item"><div class="item-head"><span class="chip pending">To verify</span><time>' + esc(ago(d.createdAt)) + "</time></div>" +
+        '<div class="driver">' + avatarHtml(d) + '<p class="fine">' + (d.photoUrl ? "Check that the photo matches her ID." : "No photo yet.") + "</p></div>" +
         '<div class="kv"><div><span class="lbl">Name</span><b>' + esc(d.name) + '</b></div><div><span class="lbl">Phone</span><b>' + esc(d.phone) + "</b></div>" +
         '<div><span class="lbl">Licence</span><b>' + esc(NCC[d.ncc] || "—") + '</b></div><div><span class="lbl">Car</span><b>' + esc([d.car, d.plate].filter(Boolean).join(" · ") || "—") + "</b></div>" +
         '<div><span class="lbl">Hours</span><b>' + esc((d.slots || []).join(", ") || "—") + '</b></div><div><span class="lbl">Areas</span><b>' + esc(d.areas || "—") + "</b></div></div>" +
@@ -1362,12 +1468,29 @@
     },
     "copy-share": function () {
       const r = currentRide(); if (!r) return;
+      if (!r.shareToken) { toast("One moment, preparing your link…"); refresh(); return; }
+      startSharing(r); renderRide();
       const text = shareText(r);
       const box = $("#share-box");
-      const fallback = function () { box.hidden = false; box.focus(); box.select(); toast("Select the text and copy it."); };
+      const fallback = function () { if (box) { box.value = text; box.hidden = false; box.focus(); box.select(); } toast("Select the text and copy it."); };
+      if (navigator.share) {
+        navigator.share({ title: window.WUBBER_LANG === "it" ? "La mia corsa Wubber" : "My Wubber ride", text: text }).catch(function () {});
+        return;
+      }
       try {
-        navigator.clipboard.writeText(text).then(function () { toast("Trip details copied. Paste them into a chat."); }, fallback);
+        navigator.clipboard.writeText(text).then(function () { toast("Trip link copied. Paste it into a chat."); }, fallback);
       } catch (e) { fallback(); }
+    },
+    "wa-share": function () {
+      const r = currentRide(); if (!r || !S.account) return;
+      if (!r.shareToken) { toast("One moment, preparing your link…"); refresh(); return; }
+      startSharing(r); renderRide();
+      const tp = String(S.account.trustedPhone || "").replace(/\D/g, "");
+      window.open("https://wa.me/" + tp + "?text=" + encodeURIComponent(shareText(r)), "_blank", "noopener");
+    },
+    "stop-share": function () {
+      const r = currentRide(); if (!r) return;
+      stopSharing(r); renderRide(); toast("Location sharing stopped. The link still shows your ride status.");
     },
     "open-sos": function () { renderSos(); $("#sos-sheet").hidden = false; $("#sos-sheet .sheet .btn-ghost").focus(); },
     "close-sos": function () { $("#sos-sheet").hidden = true; },
@@ -1543,6 +1666,12 @@
     document.addEventListener("submit", function (e) { if (e.target.id === "profile-form") saveProfile(e); });
     $("#drawer").addEventListener("click", function (e) { if (e.target.id === "drawer") closeDrawer(); });
     $("#drv-form").addEventListener("submit", driverSignup);
+    $("#d-photo").addEventListener("change", function () {
+      const f = this.files && this.files[0], box = $("#d-photo-preview");
+      box.innerHTML = "";
+      if (f && /^image\//.test(f.type)) { const img = document.createElement("img"); img.alt = ""; img.src = URL.createObjectURL(f); box.appendChild(img); }
+    });
+    document.addEventListener("change", function (e) { if (e.target.id === "drv-photo-change") changeDriverPhoto(e.target); });
     $("#fb-form").addEventListener("submit", sendFeedback);
     document.addEventListener("click", function (e) {
       const b = e.target.closest && e.target.closest("[data-act]");
@@ -1562,8 +1691,24 @@
     setInterval(function () { if (S.account) renderAll(); }, 30000);
   }
 
+  /* ---------- Install as an app ---------- */
+  let installEvt = null;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  function renderInstall() { $("#dr-install").hidden = standalone || !(installEvt || isIOS); }
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); installEvt = e; renderInstall(); });
+  window.addEventListener("appinstalled", function () { installEvt = null; $("#dr-install").hidden = true; toast("Wubber is on your home screen."); });
+  ACT["install"] = function () {
+    closeDrawer();
+    if (installEvt) { installEvt.prompt(); installEvt.userChoice.finally(function () { installEvt = null; renderInstall(); }); return; }
+    $("#ios-sheet").hidden = false;
+  };
+  ACT["close-ios"] = function () { $("#ios-sheet").hidden = true; };
+
   async function boot() {
     bindStatic();
+    renderInstall();
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
     loadMapData();
     onMap(function () { MAPS.mainKey = null; renderAll(); });
     setAuthMode("login");

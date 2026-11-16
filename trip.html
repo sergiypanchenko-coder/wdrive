@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#540CAA">
+<meta name="robots" content="noindex">
+<title>Wubber trip</title>
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { margin: 0; }
+  .trip { max-width: 560px; margin: 0 auto; padding: 16px 16px 40px; display: flex; flex-direction: column; gap: 16px; }
+  .trip-top { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--brand); }
+  .trip-top img { width: 47px; height: 30px; }
+  .trip-map { position: relative; isolation: isolate; height: 300px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--map-bg); }
+  .trip-map .map { position: absolute; inset: 0; }
+  .leaflet-tile-pane { z-index: 200; }
+  .leaflet-tile { position: absolute; left: 0; top: 0; visibility: hidden; user-select: none; }
+  .leaflet-tile-loaded { visibility: inherit; }
+  .leaflet-container img.leaflet-tile { max-width: none !important; max-height: none !important; }
+  .leaflet-zoom-animated { transform-origin: 0 0; }
+  .leaflet-fade-anim .leaflet-tile { will-change: opacity; }
+  .leaflet-interactive { cursor: pointer; }
+  .t-status { display: flex; flex-direction: column; gap: 6px; }
+  .t-meta { font-size: 13px; color: var(--muted); }
+  .t-route { display: flex; flex-direction: column; gap: 10px; }
+  .t-route div { display: flex; flex-direction: column; }
+  .t-alert { background: var(--danger-soft); color: var(--danger); border-radius: var(--r-md); padding: 12px 14px; font-weight: 700; }
+  .t-ok { background: var(--ok-soft); color: var(--ok); border-radius: var(--r-md); padding: 12px 14px; font-weight: 700; }
+  .t-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .t-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<main class="trip">
+  <div class="trip-top"><img src="logo-mark.png" alt="" width="47" height="30">Wubber</div>
+  <div id="t-body" class="section"><p class="muted">Loading the trip…</p></div>
+  <div class="trip-map" id="t-mapbox" hidden><div class="map" id="t-map"></div></div>
+  <div class="t-legend" id="t-legend" hidden><span><i style="background:#C42A6F"></i>Pickup</span><span><i style="background:#540CAA"></i>Destination</span><span><i style="background:#1A73E8"></i>Her phone</span></div>
+  <div class="card plain">
+    <h3>If you're worried</h3>
+    <p class="fine">Call her first. If you think she's in danger, call the emergency number <a href="tel:112"><b>112</b></a>. Every Wubber driver is a woman whose ID and licence the pilot team checked in person.</p>
+  </div>
+  <p class="fine">Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · <a href="privacy.html">Privacy</a> · <button type="button" class="lang-btn" data-lang-toggle>Italiano</button></p>
+</main>
+<script src="config.js"></script>
+<script src="i18n.js"></script>
+<script src="leaflet.js"></script>
+<script src="trip.js"></script>
+</body>
+</html>

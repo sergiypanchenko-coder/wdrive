@@ -98,7 +98,7 @@
             <div class="stack"><label class="lbl" for="su-tname">Name</label><input type="text" id="su-tname" placeholder="Sara"></div>
             <div class="stack"><label class="lbl" for="su-tphone">Phone</label><input type="tel" id="su-tphone" placeholder="+39 …"></div>
           </div>
-          <label class="check"><input type="checkbox" id="su-terms" required><span>I'm taking part in the Wubber pilot in Torino. The pilot team and my driver can see my first name and phone number.<span class="req" aria-hidden="true">*</span></span></label>
+          <label class="check"><input type="checkbox" id="su-terms" required><span>I've read the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a> and agree to take part in the Wubber pilot. The pilot team and my driver can see my first name and phone number.<span class="req" aria-hidden="true">*</span></span></label>
           <p class="fine" id="su-status" aria-live="polite"><span class="req">*</span> Required</p>
           <button type="submit" class="btn btn-primary btn-big btn-block" id="su-submit" disabled>Create account</button>
         </form>
@@ -113,6 +113,7 @@
           <button type="submit" class="btn btn-primary btn-big btn-block" id="rp-submit">Save new password</button>
         </form>
       </div>
+      <div class="auth-foot"><button type="button" class="lang-btn" data-lang-toggle>Italiano</button><span aria-hidden="true">·</span><a href="privacy.html" target="_blank" rel="noopener">Privacy</a></div>
     </div>
 
     <div class="sv" id="sv-live" hidden></div>
@@ -244,6 +245,16 @@
           </div>
         </div>
         <div class="card">
+          <div class="stack">
+            <label class="lbl" for="d-photo">Your photo<span class="req" aria-hidden="true">*</span></label>
+            <div class="photo-pick">
+              <div class="avatar photo-preview" id="d-photo-preview"></div>
+              <input type="file" id="d-photo" accept="image/*">
+            </div>
+            <span class="fine">A clear photo of your face. Passengers see it when you're assigned, so they know it's you.</span>
+          </div>
+        </div>
+        <div class="card">
           <fieldset style="border:0;margin:0;padding:0" class="stack">
             <legend class="lbl" style="padding:0;margin-bottom:8px">When can you drive?</legend>
             <div class="pills">
@@ -260,7 +271,7 @@
         </div>
         <div class="card">
           <p class="fine">Bring your ID and NCC licence to a short meeting with the pilot team. We check them in person and don't store copies.</p>
-          <label class="check"><input type="checkbox" id="d-consent"> <span>I agree to identity and licence checks, and to my name, car and plate being shown to passengers I drive.</span></label>
+          <label class="check"><input type="checkbox" id="d-consent"> <span>I agree to identity and licence checks, and to my first name, photo, car and plate being shown to passengers I drive. See the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
         </div>
         <button type="submit" class="btn btn-primary btn-big btn-block">Join the pilot</button>
       </form>
@@ -337,6 +348,9 @@
     <button type="button" class="dr-item" data-act="go" data-to="drive">Drive with us</button>
     <button type="button" class="dr-item" data-act="go" data-to="socials">Socials</button>
     <button type="button" class="dr-item" data-act="go" data-to="team" id="dr-team" hidden><span id="team-tab-label">Pilot dashboard</span></button>
+    <button type="button" class="dr-item" data-act="install" id="dr-install" hidden>Install the app</button>
+    <a class="dr-item" href="privacy.html" target="_blank" rel="noopener">Privacy</a>
+    <button type="button" class="dr-item" data-lang-toggle>Italiano</button>
     <div class="dr-foot">
       <span class="conn" id="conn"><i></i><span>Connecting…</span></span>
       <p class="fine">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</p>
@@ -375,9 +389,22 @@
   </div>
 </div>
 
+<div class="sheet-wrap" id="ios-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ios-title">
+    <h2 id="ios-title">Add Wubber to your home screen</h2>
+    <ol class="ios-steps">
+      <li>Open this page in <b>Safari</b>.</li>
+      <li>Tap the <b>Share</b> button at the bottom of the screen.</li>
+      <li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+    </ol>
+    <button type="button" class="btn btn-ghost btn-block" data-act="close-ios">Close</button>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="config.js"></script>
+<script src="i18n.js"></script>
 <script src="leaflet.js"></script>
 <script src="app.js"></script>
 </body>

@@ -377,3 +377,18 @@ body.locked .map-brand { display: none; }
 .social-card { flex-direction: row; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); }
 .social-card:hover { border-color: var(--brand); }
 .social-ico { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; }
+
+/* ---------- 16 Nov 2026: photos, sharing, install, language ---------- */
+.avatar.has-photo { overflow: hidden; background: var(--brand-soft); }
+.avatar img, .photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+.photo-pick { display: flex; align-items: center; gap: 14px; }
+.photo-pick input[type=file] { flex: 1 1 auto; min-width: 0; font-size: 14px; }
+.photo-preview { overflow: hidden; }
+.photo-preview:empty::before { content: ""; width: 26px; height: 26px; border-radius: 50%; border: 2px dashed var(--line); }
+.photo-change { cursor: pointer; align-self: flex-start; padding: 0; min-height: 0; }
+.share-note .linkbtn { display: inline; padding: 0; min-height: 0; margin-top: 6px; }
+.auth-foot { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); padding-top: 4px; }
+.auth-foot a, .lang-btn { color: var(--brand); font-weight: 700; text-decoration: none; }
+.lang-btn { background: none; border: 0; padding: 6px 4px; font: inherit; font-weight: 700; cursor: pointer; }
+a.dr-item { display: flex; align-items: center; text-decoration: none; }
+.ios-steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; color: var(--ink); }
