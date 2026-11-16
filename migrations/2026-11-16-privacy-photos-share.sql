@@ -123,3 +123,9 @@ end $$;
 revoke execute on function public.driver_location(uuid, double precision, double precision) from public, anon;
 grant execute on function public.driver_location(uuid, double precision, double precision) to authenticated;
 -- shared_trip() was also updated to return 'car' (the driver's position) — see the live database.
+
+-- 7. Saved places (Home, University, Work) on the rider's profile.
+alter table public.profiles add column if not exists saved_places jsonb not null default '[]'::jsonb;
+alter table public.profiles drop constraint if exists profiles_saved_places_check;
+alter table public.profiles add constraint profiles_saved_places_check check (jsonb_typeof(saved_places) = 'array' and jsonb_array_length(saved_places) <= 10 and pg_column_size(saved_places) < 8000);
+grant update (saved_places) on public.profiles to authenticated;

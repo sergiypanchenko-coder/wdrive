@@ -597,11 +597,13 @@
     setTimeout(function () { const el = $("#" + f); el.focus(); try { el.select(); } catch (e) {} }, 40);
   }
   function closeSearch() {
+    S.saveAs = null;
     $("#search").hidden = true;
     document.documentElement.style.overflow = "";
     $$(".ac-list").forEach(function (l) { l.hidden = true; });
   }
   function afterPick(field) {
+    if (field === "to" && S.saveAs && S.fields.to.sel) { const k = S.saveAs; S.saveAs = null; savePlaceAs(k, S.fields.to.sel); }
     updateEstimate();
     const a = S.fields.from.sel, b = S.fields.to.sel;
     if (a && b) { closeSearch(); S.rideView = "choose"; renderRide(); return; }
@@ -885,7 +887,7 @@
     const rows = await db.select("profiles", "select=*&id=eq." + encodeURIComponent(uid));
     const p = rows && rows[0];
     if (!p) { S.account = null; return false; }
-    S.account = { id: p.id, name: p.name, phone: p.phone, email: p.email, trustedName: p.trusted_name, trustedPhone: p.trusted_phone, role: p.role, createdAt: p.created_at };
+    S.account = { id: p.id, name: p.name, phone: p.phone, email: p.email, trustedName: p.trusted_name, trustedPhone: p.trusted_phone, role: p.role, createdAt: p.created_at, saved: Array.isArray(p.saved_places) ? p.saved_places : [] };
     return true;
   }
   async function afterAuth(welcome) {
@@ -1033,21 +1035,78 @@
       '<form id="profile-form" class="card" novalidate><h3>Your details</h3><div class="grid2">' + f("ac-name", "First name", a.name) + f("ac-phone", "Phone", a.phone, "tel") + "</div>" +
       '<h3>Trusted contact</h3><p class="fine">The person you send your trip details to during a ride.</p><div class="grid2">' + f("ac-tname", "Name", a.trustedName) + f("ac-tphone", "Phone", a.trustedPhone, "tel") + "</div>" +
       '<button type="submit" class="btn btn-primary btn-block">Save</button></form>' +
+      '<div class="card"><h3>Saved places</h3><p class="fine">Book these with one tap from the home screen.</p>' + PLACE_KINDS.map(function (k) {
+        const p = savedPlace(k.kind);
+        return '<div class="row saved-row"><span class="ico">' + k.icon + '</span><span class="rb-text"><b>' + k.name + "</b><small>" + (p ? esc(p.label) : "Not set") + "</small></span>" +
+          (p ? '<button type="button" class="linkbtn" data-act="remove-place" data-kind="' + k.kind + '">Remove</button>' : '<button type="button" class="linkbtn" data-act="saved-dest" data-kind="' + k.kind + '">Add</button>') + "</div>";
+      }).join("") + "</div>" +
+      '<div class="section"><div class="sec-head"><h2>Your rides</h2><span class="count">' + myPastRides().length + "</span></div>" + historyHtml() + "</div>" +
       '<button type="button" class="btn btn-ghost btn-block" data-act="logout">Log out</button>');
   }
+  /* ---------- Saved places ---------- */
+  const PLACE_KINDS = [
+    { kind: "home", name: "Home", icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v8a1 1 0 01-1 1h-4v-6h-6v6H5a1 1 0 01-1-1z"/></svg>' },
+    { kind: "uni", name: "University", icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c2 2 10 2 12 0v-5"/></svg>' },
+    { kind: "work", name: "Work", icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>' }
+  ];
+  function kindInfo(k) { return PLACE_KINDS.find(function (x) { return x.kind === k; }); }
+  function savedPlace(k) { return S.account && (S.account.saved || []).find(function (p) { return p.kind === k; }) || null; }
+  async function savePlaceAs(kind, place) {
+    if (!S.account || !place || place.lat == null) return;
+    const list = (S.account.saved || []).filter(function (p) { return p.kind !== kind; });
+    list.push({ kind: kind, label: String(place.label).slice(0, 120), sub: String(place.sub || "").slice(0, 160), lat: place.lat, lng: place.lng });
+    const ok = await write(function () { return db.update("profiles", "id=eq." + S.account.id, { saved_places: list }); }, "Saved as " + kindInfo(kind).name);
+    if (ok) { S.account = Object.assign({}, S.account, { saved: list }); renderAll(); }
+  }
+  async function removePlace(kind) {
+    if (!S.account) return;
+    const list = (S.account.saved || []).filter(function (p) { return p.kind !== kind; });
+    const ok = await write(function () { return db.update("profiles", "id=eq." + S.account.id, { saved_places: list }); }, "Place removed");
+    if (ok) { S.account = Object.assign({}, S.account, { saved: list }); renderAll(); }
+  }
+  function placeChips() {
+    if (!S.account) return "";
+    return '<div class="place-chips">' + PLACE_KINDS.map(function (k) {
+      const p = savedPlace(k.kind);
+      return '<button type="button" class="place-chip' + (p ? "" : " empty") + '" data-act="saved-dest" data-kind="' + k.kind + '">' + k.icon +
+        '<span><b>' + k.name + "</b><small>" + (p ? esc(p.label) : "Add") + "</small></span></button>";
+    }).join("") + "</div>";
+  }
+
+  /* ---------- Ride history ---------- */
+  function myPastRides() {
+    if (!S.account) return [];
+    return S.rides.filter(function (r) { return r.accountId === S.account.id && (r.status === "completed" || r.status === "cancelled"); })
+      .sort(function (x, y) { return x.createdAt < y.createdAt ? 1 : -1; }).slice(0, 20);
+  }
+  function whenText(iso) { return iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " · " + hhmm(iso) : ""; }
+  function historyHtml() {
+    const rs = myPastRides();
+    if (!rs.length) return '<div class="empty">Your past rides will appear here.</div>';
+    return rs.map(function (r) {
+      const d = driverOf(r), fb = r.feedback || {};
+      return '<article class="item hist"><div class="item-head"><span class="chip ' + r.status + '">' + (r.status === "completed" ? "Completed" : "Cancelled") + "</span><time>" + esc(whenText(r.createdAt)) + "</time></div>" +
+        '<div class="route"><div><span class="lbl">From</span><b>' + esc(r.pickup) + '</b></div><div><span class="lbl">To</span><b>' + esc(r.dropoff) + "</b></div></div>" +
+        ((d || r.fare || fb.driver_rating) ? '<p class="fine">' + [d ? esc(first(d.name)) : "", r.fare ? "€" + esc(r.fare) : "", fb.driver_rating ? "★ " + esc(fb.driver_rating) : ""].filter(Boolean).join(" · ") + "</p>" : "") +
+        (r.pickupPos && r.dropoffPos ? '<button type="button" class="btn btn-ghost btn-sm" data-act="book-again" data-id="' + esc(r.id) + '">Book again</button>' : "") +
+        "</article>";
+    }).join("");
+  }
+
   function renderHome() {
     const name = S.account && S.account.name;
     $("#greet").textContent = greeting() + (name ? ", " + first(name) : "");
     const a = S.fields.from.sel;
     $("#home-pickup").textContent = a ? a.label : "Set your pickup point";
     const box = $("#home-suggest");
-    if (!box.dataset.done) {
-      box.innerHTML = HOME_SPOTS.map(function (n) {
+    const sig = JSON.stringify(S.account && S.account.saved || []) + (window.WUBBER_LANG || "");
+    if (box.dataset.done !== sig) {
+      box.innerHTML = placeChips() + HOME_SPOTS.map(function (n) {
         const p = SPOTS.find(function (s) { return s.label === n; });
         if (!p) return "";
         return '<button type="button" class="row-btn" data-act="quick-dest" data-name="' + esc(p.label) + '"><span class="ico">' + PIN_ICON + '</span><span class="rb-text"><b>' + esc(p.label) + "</b><small>" + esc(p.sub) + "</small></span></button>";
       }).join("");
-      box.dataset.done = "1";
+      box.dataset.done = sig;
     }
   }
 
@@ -1060,6 +1119,12 @@
       '<span class="ico-col"><i class="r-line"></i></span><span></span>' +
       '<span class="ico-col"><i class="r-sq"></i></span><button type="button" class="trip-row" data-act="search-to"><small>Destination</small><b>' + esc(b.label) + "</b></button></div>";
     if (S.samePlace) h += '<div class="alert">Pickup and destination are the same place. Change one of them.</div>';
+    if (S.account && b.lat != null) {
+      h += '<div class="save-as"><span class="fine">Save destination as</span>' + PLACE_KINDS.map(function (k) {
+        const p = savedPlace(k.kind), same = p && Math.abs(p.lat - b.lat) < 1e-5 && Math.abs(p.lng - b.lng) < 1e-5;
+        return '<button type="button" class="pill-btn' + (same ? " on" : "") + '" data-act="save-place" data-kind="' + k.kind + '"' + (same ? ' aria-pressed="true"' : "") + ">" + (same ? "✓ " : "") + k.name + "</button>";
+      }).join("") + "</div>";
+    }
     h += '<div class="ride-opt"><div class="car">' + CAR_SVG + '</div><div class="om"><b>Wubber</b><small>Verified female driver</small><small>' +
       (S.est ? "~" + S.est.min + " min ride · " + S.est.km + " km" : "Distance checked by the team") + '</small></div><div class="op"><b>' +
       (S.est ? "€" + S.est.lo + "–" + S.est.hi : "Set by team") + "</b><small>" + (S.est ? "estimate" : "") + "</small></div></div>";
@@ -1537,6 +1602,29 @@
     "search-close": function () { closeSearch(); renderRide(); },
     "back-home": function () { S.rideView = "home"; renderRide(); },
     "request": function () { requestRide(); },
+    "saved-dest": function (b) {
+      const k = b.dataset.kind, p = savedPlace(k);
+      if (p) {
+        go("ride");
+        S.fields.to.sel = Object.assign({}, p, { pinned: true }); $("#to").value = p.label;
+        afterPick("to");
+        return;
+      }
+      S.saveAs = k;
+      go("ride");
+      openSearch("to");
+      toast("Pick the address for " + kindInfo(k).name);
+    },
+    "save-place": function (b) { const p = S.fields.to.sel; if (p) savePlaceAs(b.dataset.kind, p); },
+    "remove-place": function (b) { removePlace(b.dataset.kind); },
+    "book-again": function (b) {
+      const r = S.rides.find(function (x) { return x.id === b.dataset.id; });
+      if (!r || !r.pickupPos || !r.dropoffPos) return;
+      go("ride");
+      S.fields.from.sel = { label: r.pickup, sub: "Torino", lat: r.pickupPos.lat, lng: r.pickupPos.lng, pinned: true }; $("#from").value = r.pickup;
+      S.fields.to.sel = { label: r.dropoff, sub: "Torino", lat: r.dropoffPos.lat, lng: r.dropoffPos.lng, pinned: true }; $("#to").value = r.dropoff;
+      afterPick("to");
+    },
     "quick-dest": function (b) {
       const p = SPOTS.find(function (s) { return s.label === b.dataset.name; });
       if (!p) return;
