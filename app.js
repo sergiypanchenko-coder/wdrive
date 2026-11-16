@@ -669,7 +669,7 @@
   });
 
   /* ---------- Navigation ---------- */
-  const PAGES = { drive: "Drive with us", team: "Pilot dashboard", wait: "Waiting list", socials: "Socials", account: "Your account" };
+  const PAGES = { drive: "Drive with us", team: "Pilot dashboard", socials: "Socials", account: "Your account" };
   function go(t) {
     closeDrawer();
     if (isLocked() || (t === "team" && !isTeam())) t = "ride";
@@ -678,7 +678,7 @@
     const ride = t === "ride";
     $("#ride-screen").hidden = !ride;
     $("#page").hidden = ride;
-    ["drive", "team", "wait", "socials", "account"].forEach(function (k) { $("#tab-" + k).hidden = k !== t; });
+    ["drive", "team", "socials", "account"].forEach(function (k) { $("#tab-" + k).hidden = k !== t; });
     if (!ride) $("#page-title").textContent = PAGES[t];
     $$(".dr-item").forEach(function (b) { if (b.dataset.to === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     window.scrollTo(0, 0);
@@ -1082,14 +1082,6 @@
     if (ok) { S.dismissed.add(r.id); renderRide(); window.scrollTo(0, 0); }
   }
 
-  async function joinWaitlist(e) {
-    e.preventDefault();
-    const n = $("#w-name").value.trim(), c = $("#w-contact").value.trim();
-    if (!n || !c) { toast("Add a name and an email or phone number.", true); return; }
-    const ok = await write(function () { return db.insert("waitlist", { name: n, contact: c }); }, "Added to the waiting list.");
-    if (ok) $("#wait-form").reset();
-  }
-
   /* ---------- Rows from the database → objects the screens use ---------- */
   const RIDE_COLS = "id,created_at,rider_id,passenger_name,passenger_phone,pickup,pickup_lat,pickup_lng,dropoff,dropoff_lat,dropoff_lng," +
     "trusted_name,trusted_phone,fare_lo,fare_hi,km,status,driver_id,fare,eta_min,assigned_at,started_at,completed_at,cancelled_at,cancelled_by," +
@@ -1275,7 +1267,6 @@
       '<div class="tile"><strong>' + pct(completed.length, nonTest.length) + "%</strong><span>Completed (" + completed.length + " of " + nonTest.length + ")</span></div>" +
       '<div class="tile"><strong>' + avg + "</strong><span>Average rating (" + rated.length + ")</span></div>" +
       '<div class="tile"><strong>' + verified.length + "/" + S.drivers.length + "</strong><span>Drivers verified</span></div>" +
-      '<div class="tile"><strong>' + S.waitlist.length + "</strong><span>Waiting list</span></div>" +
       '<div class="tile"><strong>' + S.riderCount + "</strong><span>Rider accounts</span></div></div>";
     if (!fbs.length) sh += '<div class="empty">Feedback charts appear here after the first passenger completes a ride and answers the survey.</div>';
     else {
@@ -1309,12 +1300,6 @@
       }).join('<hr style="border:0;border-top:1px solid var(--line);margin:0;width:100%">') + "</div>";
     }
     paint($("#team-drivers"), dh);
-
-    // Waitlist
-    $("#c-wait").textContent = S.waitlist.length ? String(S.waitlist.length) : "";
-    paint($("#team-wait"), S.waitlist.length ? '<div class="item">' + S.waitlist.slice().sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : -1; }).map(function (w) {
-      return '<div class="row" style="justify-content:space-between"><div class="stack" style="gap:0"><b>' + esc(w.name) + '</b><span class="fine">' + esc(w.contact) + '</span></div><span class="fine">' + esc(ago(w.createdAt)) + "</span></div>";
-    }).join("") + "</div>" : '<div class="empty">Nobody on the waiting list yet.</div>');
 
     // Past
     const past = rides.filter(function (r) { return r.status === "completed" || r.status === "cancelled"; });
@@ -1491,7 +1476,6 @@
         db.select("drivers", "select=*&order=created_at.desc&limit=500")
       ];
       if (team) {
-        jobs.push(db.select("waitlist", "select=*&order=created_at.desc&limit=1000"));
         jobs.push(db.select("profiles", "select=id,role"));
       }
       const res = await Promise.all(jobs);
@@ -1502,8 +1486,7 @@
       S.rides = (res[0] || []).map(rowToRide);
       S.drivers = (res[1] || []).map(rowToDriver);
       if (team) {
-        S.waitlist = (res[2] || []).map(function (w) { return { id: w.id, name: w.name, contact: w.contact, createdAt: w.created_at }; });
-        S.riderCount = (res[3] || []).filter(function (p) { return p.role !== "team"; }).length;
+        S.riderCount = (res[2] || []).filter(function (p) { return p.role !== "team"; }).length;
       }
       S.loaded.rides = S.loaded.drivers = S.loaded.waitlist = true;
       setConn("live");
@@ -1559,7 +1542,6 @@
     $("#reset-form").addEventListener("submit", resetPassword);
     document.addEventListener("submit", function (e) { if (e.target.id === "profile-form") saveProfile(e); });
     $("#drawer").addEventListener("click", function (e) { if (e.target.id === "drawer") closeDrawer(); });
-    $("#wait-form").addEventListener("submit", joinWaitlist);
     $("#drv-form").addEventListener("submit", driverSignup);
     $("#fb-form").addEventListener("submit", sendFeedback);
     document.addEventListener("click", function (e) {
