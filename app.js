@@ -10,7 +10,7 @@
     ["Mole Antonelliana", "Via Montebello, 20, 10124 Torino TO", 45.0690, 7.6932],
     ["Stazione Porta Nuova", "Corso Vittorio Emanuele II, 53, 10125 Torino TO", 45.0621, 7.6787],
     ["Stazione Porta Susa", "Piazza XVIII Dicembre, 10122 Torino TO", 45.0718, 7.6655],
-    ["ESCP Business School, Turin campus", "Corso Unione Sovietica, 218 bis, 10134 Torino TO", 45.0399, 7.6474],
+    ["ESCP Business School, Turin campus", "Via Andrea Doria, 27, 10123 Torino TO", 45.06369, 7.68631],
     ["Politecnico di Torino", "Corso Duca degli Abruzzi, 24, 10129 Torino TO", 45.0625, 7.6624],
     ["Università di Torino, Rettorato", "Via Giuseppe Verdi, 8, 10124 Torino TO", 45.0697, 7.6918],
     ["Campus Luigi Einaudi", "Lungo Dora Siena, 100, 10153 Torino TO", 45.0745, 7.7012],
