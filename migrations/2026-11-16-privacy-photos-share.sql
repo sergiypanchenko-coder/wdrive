@@ -107,3 +107,19 @@ begin
 end $$;
 revoke execute on function public.shared_trip(uuid) from public;
 grant execute on function public.shared_trip(uuid) to anon, authenticated;
+
+-- 6. Driver's live position (16 Nov, later): the rider sees the car moving.
+alter table public.rides add column if not exists driver_lat double precision;
+alter table public.rides add column if not exists driver_lng double precision;
+alter table public.rides add column if not exists driver_loc_at timestamptz;
+grant select (driver_lat, driver_lng, driver_loc_at, rider_lat, rider_lng) on public.rides to authenticated;
+create or replace function public.driver_location(p_ride uuid, p_lat double precision, p_lng double precision) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_lat is null or p_lng is null or p_lat not between 44 and 46 or p_lng not between 7 and 8.5 then return; end if;
+  update public.rides set driver_lat = p_lat, driver_lng = p_lng, driver_loc_at = now()
+   where id = p_ride and driver_id = public.my_driver_id() and status in ('assigned', 'on_trip');
+end $$;
+revoke execute on function public.driver_location(uuid, double precision, double precision) from public, anon;
+grant execute on function public.driver_location(uuid, double precision, double precision) to authenticated;
+-- shared_trip() was also updated to return 'car' (the driver's position) — see the live database.

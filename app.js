@@ -734,6 +734,58 @@
       (shareLink(r) ? "Follow my trip live: " + shareLink(r) : "Booked at " + hhmm(r.createdAt) + ".");
   }
 
+  /* ---------- Driver's live position (her passenger sees the car move) ---------- */
+  const DLOC = { watch: null, last: 0 };
+  function myActiveDriverRides() {
+    const me = myDriverRecord();
+    if (!me || me.status !== "verified") return [];
+    return S.rides.filter(function (r) { return r.driverId === me.id && (r.status === "assigned" || r.status === "on_trip"); });
+  }
+  function syncDriverLoc() {
+    const on = !!(S.account && navigator.geolocation && myActiveDriverRides().length);
+    if (!on) { if (DLOC.watch != null) { navigator.geolocation.clearWatch(DLOC.watch); DLOC.watch = null; } return; }
+    if (DLOC.watch != null) return;
+    DLOC.last = 0;
+    DLOC.watch = navigator.geolocation.watchPosition(function (pos) {
+      if (Date.now() - DLOC.last < 8000) return;
+      DLOC.last = Date.now();
+      myActiveDriverRides().forEach(function (r) {
+        db.rpc("driver_location", { p_ride: r.id, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude }).catch(function (e) { console.warn(e); });
+      });
+    }, function (err) {
+      if (err && err.code === 1) toast("Location is blocked, so your passenger can't see your car on the map. Allow location for this site.", true, 8000);
+    }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+  }
+
+  /* ---------- The car on the rider's map ---------- */
+  const CAR_ICON_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16.5h16v-3.2c0-.8-.5-1.5-1.2-1.8l-1.6-.6-1.8-3.4A2 2 0 0013.6 6.5h-3.2a2 2 0 00-1.8 1L6.8 10.9l-1.6.6C4.5 11.8 4 12.5 4 13.3v3.2z"/><circle cx="7.5" cy="16.5" r="1.7"/><circle cx="16.5" cy="16.5" r="1.7"/></svg>';
+  let carMarker = null, carRide = null;
+  function updateCar(r) {
+    const m = MAPS.main;
+    const pos = r && (r.status === "assigned" || r.status === "on_trip") ? r.carPos : null;
+    if (!m || !window.L || !pos) { if (carMarker && m) m.removeLayer(carMarker); carMarker = null; carRide = null; return; }
+    const ll = [pos.lat, pos.lng];
+    if (!carMarker) {
+      carMarker = L.marker(ll, { icon: L.divIcon({ className: "car-wrap", html: '<div class="car-mk">' + CAR_ICON_SVG + "</div>", iconSize: [40, 40], iconAnchor: [20, 20] }), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(m);
+    } else carMarker.setLatLng(ll);
+    const target = r.status === "assigned" ? r.pickupPos : r.dropoffPos;
+    if (carRide !== r.id + r.status || !m.getBounds().pad(-0.08).contains(ll)) {
+      carRide = r.id + r.status;
+      const pad = sheetPad();
+      const pts = [ll]; if (target) pts.push([target.lat, target.lng]);
+      if (pts.length === 2) m.fitBounds(pts, { paddingTopLeft: [pad.tl[0] + 24, pad.tl[1] + 56], paddingBottomRight: [pad.br[0] + 24, pad.br[1] + 24], maxZoom: 16 });
+      else m.panTo(ll);
+    }
+  }
+  function carDistanceText(r) {
+    if (!r.carPos) return "";
+    const target = r.status === "assigned" ? r.pickupPos : r.dropoffPos;
+    if (!target) return "";
+    const km = haversineKm(r.carPos, target);
+    const dist = km < 1 ? Math.max(50, Math.round(km * 1000 / 50) * 50) + " m" : km.toFixed(1) + " km";
+    return r.status === "assigned" ? "Her car is " + dist + " from you" : dist + " to your destination";
+  }
+
   /* ---------- Live location for the share link ---------- */
   const LOC = { watch: null, last: 0, ride: null };
   function sharingIds() { try { return JSON.parse(lsGet("wubber.locshare") || "[]"); } catch (e) { return []; } }
@@ -1038,6 +1090,7 @@
         r.pin.split("").map(function (c) { return "<span>" + esc(c) + "</span>"; }).join("") + "</div></div>";
     }
     html += "</div>";
+    if (carDistanceText(r)) html += '<p class="car-live"><span class="live-dot" aria-hidden="true"></span>' + esc(carDistanceText(r)) + "</p>";
     html += '<div class="steps" aria-label="Ride progress">' + names.map(function (n, i) { return '<div class="step' + (i <= idx ? " done" : "") + '"><i></i>' + n + "</div>"; }).join("") + "</div>";
     if (r.status !== "on_trip") html += '<p class="fine">Tell your driver your PIN. She can only start the trip with it.</p>';
     if (r.sos && !r.sosResolved) html += '<div class="alert">Pilot team alerted at ' + esc(hhmm(r.sosAt)) + ". Call 112 if you are in danger.</div>";
@@ -1095,13 +1148,14 @@
       showView("live");
       paint($("#sv-live"), liveHtml(r));
       const off = r.status === "cancelled";
-      requestAnimationFrame(function () { updateMainMap(off ? null : r.pickupPos, off ? null : r.dropoffPos, "live:" + r.id + ":" + r.status); });
+      requestAnimationFrame(function () { updateMainMap(off ? null : r.pickupPos, off ? null : r.dropoffPos, "live:" + r.id + ":" + r.status); updateCar(off ? null : r); });
       return;
     }
     const a = S.fields.from.sel, b = S.fields.to.sel;
     let v = S.rideView || "home";
     if (v === "choose" && !(a && b)) v = "home";
     S.rideView = v;
+    updateCar(null);
     showView(v);
     if (v === "home") renderHome();
     if (v === "choose") renderChoose();
@@ -1162,7 +1216,7 @@
   /* ---------- Rows from the database → objects the screens use ---------- */
   const RIDE_COLS = "id,created_at,rider_id,passenger_name,passenger_phone,pickup,pickup_lat,pickup_lng,dropoff,dropoff_lat,dropoff_lng," +
     "trusted_name,trusted_phone,fare_lo,fare_hi,km,status,driver_id,fare,eta_min,assigned_at,started_at,completed_at,cancelled_at,cancelled_by," +
-    "sos,sos_at,sos_resolved,sos_resolved_at,passenger_dismissed,feedback,share_token,rider_loc_at";
+    "sos,sos_at,sos_resolved,sos_resolved_at,passenger_dismissed,feedback,share_token,rider_loc_at,driver_lat,driver_lng,driver_loc_at";
   function rowToRide(x) {
     return {
       id: x.id, createdAt: x.created_at, accountId: x.rider_id,
@@ -1176,7 +1230,8 @@
       assignedAt: x.assigned_at, startedAt: x.started_at, completedAt: x.completed_at, cancelledAt: x.cancelled_at, cancelledBy: x.cancelled_by,
       sos: !!x.sos, sosAt: x.sos_at, sosResolved: !!x.sos_resolved, sosResolvedAt: x.sos_resolved_at,
       passengerDismissed: !!x.passenger_dismissed, feedback: x.feedback || null, femaleDriver: true,
-      shareToken: x.share_token || null, riderLocAt: x.rider_loc_at || null
+      shareToken: x.share_token || null, riderLocAt: x.rider_loc_at || null,
+      carPos: x.driver_lat != null && x.driver_loc_at && Date.now() - Date.parse(x.driver_loc_at) < 300000 ? { lat: x.driver_lat, lng: x.driver_lng, at: x.driver_loc_at } : null
     };
   }
   function rowToDriver(x) {
@@ -1223,6 +1278,7 @@
           '<div class="route"><div><span class="lbl">From</span><b>' + esc(r.pickup) + '</b></div><div><span class="lbl">To</span><b>' + esc(r.dropoff) + "</b></div></div>" +
           '<div class="kv"><div><span class="lbl">Passenger</span><b>' + esc(first(r.passengerName)) + '</b></div><div><span class="lbl">Phone</span><b>' + esc(r.passengerPhone || "—") + "</b></div>" +
           '<div><span class="lbl">Price</span><b>' + (r.fare ? "€" + esc(r.fare) : "Ask the team") + '</b></div><div><span class="lbl">Pickup in</span><b>' + (r.etaMin ? esc(r.etaMin) + " min" : "—") + "</b></div></div>";
+        html += '<p class="fine car-live"><span class="live-dot" aria-hidden="true"></span>Your passenger sees your car on her map while this screen is open.</p>';
         const navTo = r.status === "assigned" ? r.pickupPos : r.dropoffPos;
         if (navTo) html += '<a class="btn btn-ghost btn-sm" href="' + esc(gmapsDir(null, navTo)) + '" target="_blank" rel="noopener">' + (r.status === "assigned" ? "Navigate to pickup" : "Navigate to drop-off") + " in Google Maps</a>";
         if (r.status === "assigned") {
@@ -1661,6 +1717,7 @@
       closeDrawer();
       if (S.tab !== "ride") { go("ride"); return; }
     }
+    syncDriverLoc();
     renderRide();
     if (S.tab === "account") renderAccount();
     if (S.tab === "drive") renderDrive();

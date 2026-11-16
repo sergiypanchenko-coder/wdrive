@@ -21,6 +21,7 @@
     if (t.pickup_lat != null) pts.push({ lat: t.pickup_lat, lng: t.pickup_lng, c: "#C42A6F", r: 8 });
     if (t.dropoff_lat != null) pts.push({ lat: t.dropoff_lat, lng: t.dropoff_lng, c: "#540CAA", r: 8 });
     if (t.loc && t.loc.lat != null) pts.push({ lat: t.loc.lat, lng: t.loc.lng, c: "#1A73E8", r: 10, me: true });
+    if (t.car && t.car.lat != null) pts.push({ lat: t.car.lat, lng: t.car.lng, c: "#F59E0B", r: 10, me: !t.loc });
     const box = document.getElementById("t-mapbox");
     if (!pts.length || !window.L) { box.hidden = true; document.getElementById("t-legend").hidden = true; return; }
     box.hidden = false; document.getElementById("t-legend").hidden = false;
@@ -72,6 +73,7 @@
     }
     h += '<div class="card plain t-route"><div><span class="lbl">From</span><b>' + esc(t.pickup) + '</b></div><div><span class="lbl">To</span><b>' + esc(t.dropoff) + "</b></div></div>";
     if (t.status === "assigned" || t.status === "on_trip") {
+      if (t.car) h += '<p class="t-meta">' + "Her driver's car" + ": " + ago(t.car.at) + "</p>";
       h += '<p class="t-meta">' + (t.loc ? "Her phone's location updated " + ago(t.loc.at) + "." : "She isn't sharing her location right now; you'll still see her ride status.") + " This page refreshes on its own.</p>";
     }
     body.innerHTML = h;

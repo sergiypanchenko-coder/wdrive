@@ -450,3 +450,14 @@ a.dr-item { display: flex; align-items: center; text-decoration: none; }
 .stars label:active svg { transform: scale(.9); }
 .rating-card { flex-direction: row; align-items: center; gap: 14px; }
 .big-star { font-size: 34px; line-height: 1; color: #F5B82E; }
+
+/* ---------- Live car on the map ---------- */
+.car-wrap { background: none; border: 0; }
+.car-mk { width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: #FFFFFF; display: grid; place-items: center; border: 3px solid #FFFFFF; box-shadow: 0 4px 12px rgba(58, 16, 41, .35); position: relative; }
+.car-mk::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--brand); opacity: 0; animation: car-pulse 2s ease-out infinite; }
+@keyframes car-pulse { 0% { transform: scale(.7); opacity: .7; } 100% { transform: scale(1.4); opacity: 0; } }
+:root[data-theme="dark"] .car-mk { background: #7C3AED; border-color: #17101F; }
+.car-live { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ok); font-size: 14px; }
+p.fine.car-live { font-weight: 500; }
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); flex: none; box-shadow: 0 0 0 0 var(--ok); animation: live-dot 1.6s ease-out infinite; }
+@keyframes live-dot { 0% { box-shadow: 0 0 0 0 rgba(23, 112, 77, .5); } 100% { box-shadow: 0 0 0 8px rgba(23, 112, 77, 0); } }
