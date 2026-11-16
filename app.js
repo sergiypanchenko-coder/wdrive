@@ -339,9 +339,23 @@
     4: { min: 14.5, w: 4, cas: "#EAD8E0", fill: "#F8F0F4" },
     5: { min: 15.5, w: 3, cas: "#EEE0E7", fill: "#FFFFFF" }
   };
+  // Night version of the map: plum streets, pink main roads, lavender labels.
+  const ROAD_DARK = {
+    1: { min: 0, w: 9, cas: "#5A2347", fill: "#8A3466" },
+    2: { min: 0, w: 7.5, cas: "#2A1F37", fill: "#46355A" },
+    3: { min: 13.5, w: 5, cas: "#251B31", fill: "#3B2D4C" },
+    4: { min: 14.5, w: 4, cas: "#231A2F", fill: "#33273F" },
+    5: { min: 15.5, w: 3, cas: "#221930", fill: "#382A48" }
+  };
+  const MAPC = {
+    light: { park: "#DCEFD5", water: "#C9DEF0", texture: "#E8D2DC", halo: "rgba(255,255,255,0.95)", label: "#6E3B55", dot: "#C42A6F", spot: "#4A1491", road: ROAD },
+    dark: { park: "#1E3326", water: "#1B2B45", texture: "#3A2B47", halo: "rgba(23,16,31,0.92)", label: "#D7C4E4", dot: "#EE5C98", spot: "#C9A8FF", road: ROAD_DARK }
+  };
+  function mapColors() { return MAPC[window.WUBBER_THEME === "dark" ? "dark" : "light"]; }
   const textW = new Map();
   function drawMap(ctx, z, w, h, offX, offY) {
     const F = MAPD.F; if (!F) return;
+    const MC = mapColors(), RD = MC.road;
     const scale = 256 * Math.pow(2, z);
     const vx0 = offX / scale, vy0 = offY / scale, vx1 = (offX + w) / scale, vy1 = (offY + h) / scale;
     const byType = [[], [], [], [], [], [], [], [], []];
@@ -358,19 +372,19 @@
     }
     ctx.lineJoin = "round"; ctx.lineCap = "round";
     // parks and water
-    ctx.fillStyle = "#DCEFD5"; ctx.beginPath(); byType[7].forEach(function (i) { path(i, true); }); ctx.fill();
-    ctx.fillStyle = "#C9DEF0"; ctx.beginPath(); byType[8].forEach(function (i) { path(i, true); }); ctx.fill();
-    ctx.strokeStyle = "#C9DEF0"; ctx.lineWidth = Math.max(3, 14 * Math.pow(2, (z - 15) * 0.8)); ctx.beginPath(); byType[6].forEach(function (i) { path(i); }); ctx.stroke();
+    ctx.fillStyle = MC.park; ctx.beginPath(); byType[7].forEach(function (i) { path(i, true); }); ctx.fill();
+    ctx.fillStyle = MC.water; ctx.beginPath(); byType[8].forEach(function (i) { path(i, true); }); ctx.fill();
+    ctx.strokeStyle = MC.water; ctx.lineWidth = Math.max(3, 14 * Math.pow(2, (z - 15) * 0.8)); ctx.beginPath(); byType[6].forEach(function (i) { path(i); }); ctx.stroke();
     const f = Math.max(0.35, Math.pow(2, (z - 16) * 0.65));
     const order = [5, 4, 3, 2, 1];
     // thin texture at low zoom
-    if (z < 13.5) { ctx.strokeStyle = "#E8D2DC"; ctx.lineWidth = 0.6; ctx.beginPath(); byType[3].forEach(function (i) { path(i); }); ctx.stroke(); }
+    if (z < 13.5) { ctx.strokeStyle = MC.texture; ctx.lineWidth = 0.6; ctx.beginPath(); byType[3].forEach(function (i) { path(i); }); ctx.stroke(); }
     order.forEach(function (t) {
-      const R = ROAD[t]; if (z < R.min) return;
+      const R = RD[t]; if (z < R.min) return;
       ctx.strokeStyle = R.cas; ctx.lineWidth = R.w * f + 2; ctx.beginPath(); byType[t].forEach(function (i) { path(i); }); ctx.stroke();
     });
     order.forEach(function (t) {
-      const R = ROAD[t]; if (z < R.min) return;
+      const R = RD[t]; if (z < R.min) return;
       ctx.strokeStyle = R.fill; ctx.lineWidth = R.w * f; ctx.beginPath(); byType[t].forEach(function (i) { path(i); }); ctx.stroke();
     });
     // street names
@@ -381,7 +395,7 @@
     }
     if (z >= 14.5) {
       ctx.font = "500 11px 'DM Sans', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(255,255,255,0.95)"; ctx.fillStyle = "#6E3B55";
+      ctx.lineWidth = 3.5; ctx.strokeStyle = MC.halo; ctx.fillStyle = MC.label;
       const done = new Set(); let count = 0;
       const types = z >= 16 ? [1, 2, 3] : z >= 15.5 ? [1, 2, 3] : [1, 2];
       types.forEach(function (t) {
@@ -419,9 +433,9 @@
         let tw = textW.get("§" + p.label); if (tw == null) { ctx.font = "700 11px 'DM Sans', sans-serif"; tw = ctx.measureText(p.label).width; textW.set("§" + p.label, tw); }
         if (!free(x + tw / 2 + 8, y, tw / 2 + 10, 9)) return;
         boxes.push([x + tw / 2 + 8, y, tw / 2 + 10, 9]);
-        ctx.fillStyle = "#C42A6F"; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
-        ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(255,255,255,0.95)"; ctx.strokeText(p.label, x + 8, y);
-        ctx.fillStyle = "#4A1491"; ctx.fillText(p.label, x + 8, y);
+        ctx.fillStyle = MC.dot; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 3.5; ctx.strokeStyle = MC.halo; ctx.strokeText(p.label, x + 8, y);
+        ctx.fillStyle = MC.spot; ctx.fillText(p.label, x + 8, y);
       });
     }
   }
@@ -495,7 +509,7 @@
     if (a && a.lat != null) { store.layers.push(L.marker([a.lat, a.lng], { icon: pinIcon("A"), keyboard: false, interactive: false }).addTo(m)); pts.push([a.lat, a.lng]); }
     if (b && b.lat != null) { store.layers.push(L.marker([b.lat, b.lng], { icon: pinIcon("B"), keyboard: false, interactive: false }).addTo(m)); pts.push([b.lat, b.lng]); }
     if (pts.length === 2) {
-      store.layers.push(L.polyline(pts, { color: "#540CAA", weight: 4, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(m));
+      store.layers.push(L.polyline(pts, { color: window.WUBBER_THEME === "dark" ? "#C9A8FF" : "#540CAA", weight: 4, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(m));
       m.fitBounds(pts, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, maxZoom: 16, animate: false });
     } else {
       m.setView(pts.length ? pts[0] : TORINO, pts.length ? 16 : 13.5, { animate: false });
@@ -1667,6 +1681,10 @@
     $("#drawer").addEventListener("click", function (e) { if (e.target.id === "drawer") closeDrawer(); });
     $("#drv-form").addEventListener("submit", driverSignup);
     window.addEventListener("wubber:lang", function () { renderAll(); });
+    window.addEventListener("wubber:theme", function () {
+      [MAPS.main, MAPS.picker].forEach(function (m) { if (m) m.fire("viewreset"); });
+      MAPS.mainKey = null; renderAll();
+    });
     $("#d-photo").addEventListener("change", function () {
       const f = this.files && this.files[0], box = $("#d-photo-preview");
       box.innerHTML = "";

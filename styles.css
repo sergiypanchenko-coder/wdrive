@@ -22,6 +22,9 @@
   --font-body: "DM Sans", "Helvetica Neue", "Segoe UI", sans-serif;
   --r-lg: 22px;
   --r-md: 14px;
+  --disabled-bg: #E4E0E2;
+  --disabled-ink: #6F6A6D;
+  --attr-bg: rgba(255, 255, 255, .85);
   color-scheme: light;
 }
 html, body { background: var(--bg); color: var(--ink); }
@@ -76,7 +79,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 
 .btn { min-height: 48px; border-radius: 999px; border: none; padding: 0 20px; font-weight: 700; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
 .btn-primary { background: var(--accent); color: var(--accent-ink); }
-.btn-primary:disabled { background: #E4E0E2; color: #6F6A6D; cursor: not-allowed; }
+.btn-primary:disabled { background: var(--disabled-bg); color: var(--disabled-ink); cursor: not-allowed; }
 .btn-ghost { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
 .btn-danger { background: var(--danger); color: #FFFFFF; }
 .btn-sm { min-height: 40px; font-size: 14px; padding: 0 14px; }
@@ -186,7 +189,7 @@ details.fold summary { cursor: pointer; font-weight: 500; min-height: 44px; disp
 .sheet { width: 100%; max-width: 520px; background: var(--bg); border-radius: 26px 26px 0 0; display: flex; flex-direction: column; gap: 14px;
   padding: 24px max(20px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); }
 .sos-num { font-family: var(--font-display); font-size: 56px; font-weight: 700; color: var(--danger); line-height: 1; letter-spacing: .02em; }
-.toast { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); max-width: min(480px, calc(100% - 32px)); background: var(--ink); color: #FFFFFF; padding: 12px 16px; border-radius: 14px; font-size: 14px; box-shadow: var(--shadow); }
+.toast { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); max-width: min(480px, calc(100% - 32px)); background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 14px; font-size: 14px; box-shadow: var(--shadow); }
 .toast.err { background: var(--danger); }
 .copybox { width: 100%; min-height: 90px; font-size: 14px; }
 
@@ -206,7 +209,7 @@ details.fold summary { cursor: pointer; font-weight: 500; min-height: 44px; disp
 .leaflet-bar { border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
 .leaflet-bar a { display: block; width: 44px; height: 44px; line-height: 44px; text-align: center; background: var(--bg); color: var(--ink); text-decoration: none; font-size: 22px; font-weight: 700; }
 .leaflet-bar a + a { border-top: 1px solid var(--line); }
-.leaflet-control-attribution { background: rgba(255, 255, 255, .85); padding: 1px 6px; font-size: 10px; color: var(--muted); border-top-left-radius: 6px; }
+.leaflet-control-attribution { background: var(--attr-bg); padding: 1px 6px; font-size: 10px; color: var(--muted); border-top-left-radius: 6px; }
 .leaflet-control-attribution a { color: var(--muted); }
 
 /* Maps */
@@ -278,7 +281,7 @@ html, body { height: 100%; }
 .rb-text b { font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rb-text small { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chev { flex: none; color: var(--muted); }
-.r-dot { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); box-shadow: inset 0 0 0 3.5px var(--ink), inset 0 0 0 6px #FFFFFF; }
+.r-dot { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); box-shadow: inset 0 0 0 3.5px var(--ink), inset 0 0 0 6px var(--bg); }
 .r-sq { display: block; width: 12px; height: 12px; background: var(--accent); }
 .r-line { display: block; width: 2px; flex: 1; background: var(--line); margin: 4px 0; }
 .promise { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 16px; background: var(--surface); color: var(--ink); font-size: 14px; }
@@ -368,7 +371,7 @@ body.locked .handle { display: none; }
 body.locked .map-brand { display: none; }
 .greet, .sv-head h2, .live-head h2, h1 { color: var(--ink); }
 .mk-a { background: var(--brand); }
-.r-dot { background: var(--brand); box-shadow: inset 0 0 0 3.5px var(--brand), inset 0 0 0 6px #FFFFFF; }
+.r-dot { background: var(--brand); box-shadow: inset 0 0 0 3.5px var(--brand), inset 0 0 0 6px var(--bg); }
 .ride-opt { border-color: var(--brand); }
 .ride-opt .car { background: var(--brand-soft); color: var(--brand); }
 .promise svg { color: var(--brand); }
@@ -397,3 +400,42 @@ a.dr-item { display: flex; align-items: center; text-decoration: none; }
 .flag svg { width: 100%; height: 100%; display: block; border-radius: 5px; box-shadow: 0 0 0 1px rgba(0,0,0,.12) inset; }
 .flag[aria-pressed=true] { opacity: 1; border-color: var(--brand); }
 .flag:hover { opacity: 1; }
+
+/* ---------- Theme switch (sun / moon next to the flags) ---------- */
+.flags { align-items: center; }
+.flags-sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
+.theme-btn { width: 36px; height: 32px; padding: 0; border: 2px solid transparent; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; opacity: .7; transition: opacity .15s, border-color .15s, color .15s; }
+.theme-btn:hover { opacity: 1; }
+.theme-btn[aria-pressed=true] { opacity: 1; color: var(--brand); border-color: var(--brand); }
+
+/* ---------- Dark mode: deep plum night, pink and lavender lights ---------- */
+:root[data-theme="dark"] {
+  --bg: #17101F;
+  --surface: #221830;
+  --surface-2: #2C1F3D;
+  --line: #3B2B4F;
+  --ink: #F3EAF7;
+  --muted: #B8A5C6;
+  --accent: #EE5C98;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #3D1A30;
+  --brand: #C9A8FF;
+  --brand-soft: #2B1F47;
+  --danger: #FF6B73;
+  --danger-soft: #3A161C;
+  --ok: #5ED19A;
+  --ok-soft: #12301F;
+  --warn: #F2B65A;
+  --warn-soft: #33260E;
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  --map-bg: #1D1528;
+  --disabled-bg: #2E2538;
+  --disabled-ink: #7F7189;
+  --attr-bg: rgba(23, 16, 31, .85);
+  color-scheme: dark;
+}
+:root[data-theme="dark"] .mk-a { background: #7C3AED; }
+:root[data-theme="dark"] .btn-danger, :root[data-theme="dark"] .fab-sos, :root[data-theme="dark"] .chip.sos { background: #D9343F; }
+:root[data-theme="dark"] .sheet-wrap, :root[data-theme="dark"] .drawer-wrap { background: rgba(5, 2, 9, .6); }
+:root[data-theme="dark"] .flag svg { box-shadow: 0 0 0 1px rgba(255, 255, 255, .15) inset; }
+:root[data-theme="dark"] input[type=file] { color: var(--muted); }
