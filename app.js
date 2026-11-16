@@ -85,13 +85,23 @@
 
   /* ---------- Toast ---------- */
   let toastTimer = null;
+  /* ---------- Smooth show / hide ---------- */
+  const REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function showEl(el) { if (!el) return; clearTimeout(el._hideT); el.classList.remove("closing"); el.hidden = false; }
+  function hideEl(el) {
+    if (!el || el.hidden || el.classList.contains("closing")) return;
+    if (REDUCED) { el.hidden = true; return; }
+    el.classList.add("closing");
+    clearTimeout(el._hideT);
+    el._hideT = setTimeout(function () { el.hidden = true; el.classList.remove("closing"); }, 220);
+  }
   function toast(msg, isErr, ms) {
     const t = $("#toast");
     t.textContent = msg;
     t.className = "toast" + (isErr ? " err" : "");
-    t.hidden = false;
+    showEl(t);
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.hidden = true; }, ms || (isErr ? 6000 : 3200));
+    toastTimer = setTimeout(function () { hideEl(t); }, ms || (isErr ? 6000 : 3200));
   }
 
   /* ---------- Supabase connection (plain fetch, no library) ---------- */
@@ -510,7 +520,9 @@
     if (b && b.lat != null) { store.layers.push(L.marker([b.lat, b.lng], { icon: pinIcon("B"), keyboard: false, interactive: false }).addTo(m)); pts.push([b.lat, b.lng]); }
     if (pts.length === 2) {
       store.layers.push(L.polyline(pts, { color: window.WUBBER_THEME === "dark" ? "#C9A8FF" : "#540CAA", weight: 4, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(m));
-      m.fitBounds(pts, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, maxZoom: 16, animate: false });
+      if (store.shown && !REDUCED) m.flyToBounds(pts, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, maxZoom: 16, duration: 0.6 });
+      else m.fitBounds(pts, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, maxZoom: 16, animate: false });
+      store.shown = true;
     } else {
       m.setView(pts.length ? pts[0] : TORINO, pts.length ? 16 : 13.5, { animate: false });
       const dx = (pad.tl[0] - pad.br[0]) / 2, dy = (pad.tl[1] - pad.br[1]) / 2;
@@ -707,8 +719,8 @@
     if (ride) MAPS.mainKey = null;
     renderAll();
   }
-  function openDrawer() { if (isLocked()) return; $("#drawer").hidden = false; const f = $(".dr-item[aria-current]") || $(".dr-item"); if (f) f.focus(); }
-  function closeDrawer() { $("#drawer").hidden = true; }
+  function openDrawer() { if (isLocked()) return; showEl($("#drawer")); const f = $(".dr-item[aria-current]") || $(".dr-item"); if (f) f.focus(); }
+  function closeDrawer() { hideEl($("#drawer")); }
 
   /* ---------- RIDE ---------- */
   function currentRide() {
@@ -1661,8 +1673,8 @@
       const r = currentRide(); if (!r) return;
       stopSharing(r); renderRide(); toast("Location sharing stopped. The link still shows your ride status.");
     },
-    "open-sos": function () { renderSos(); $("#sos-sheet").hidden = false; $("#sos-sheet .sheet .btn-ghost").focus(); },
-    "close-sos": function () { $("#sos-sheet").hidden = true; },
+    "open-sos": function () { renderSos(); showEl($("#sos-sheet")); $("#sos-sheet .sheet .btn-ghost").focus(); },
+    "close-sos": function () { hideEl($("#sos-sheet")); },
     "alert-team": async function () {
       const r = currentRide(); if (!r) return;
       const ok = await write(function () { return db.rpc("rider_action", { p_ride: r.id, p_action: "sos" }); });
@@ -1852,10 +1864,10 @@
       const b = e.target.closest && e.target.closest("[data-act]");
       if (b && ACT[b.dataset.act]) { e.preventDefault(); ACT[b.dataset.act](b, e); }
     });
-    $("#sos-sheet").addEventListener("click", function (e) { if (e.target.id === "sos-sheet") $("#sos-sheet").hidden = true; });
+    $("#sos-sheet").addEventListener("click", function (e) { if (e.target.id === "sos-sheet") hideEl($("#sos-sheet")); });
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Escape") return;
-      if (!$("#sos-sheet").hidden) $("#sos-sheet").hidden = true;
+      if (!$("#sos-sheet").hidden) hideEl($("#sos-sheet"));
       else if (!$("#picker").hidden) closePicker();
       else if (!$("#drawer").hidden) closeDrawer();
       else if (!$("#search").hidden) { closeSearch(); renderRide(); }
@@ -1876,9 +1888,9 @@
   ACT["install"] = function () {
     closeDrawer();
     if (installEvt) { installEvt.prompt(); installEvt.userChoice.finally(function () { installEvt = null; renderInstall(); }); return; }
-    $("#ios-sheet").hidden = false;
+    showEl($("#ios-sheet"));
   };
-  ACT["close-ios"] = function () { $("#ios-sheet").hidden = true; };
+  ACT["close-ios"] = function () { hideEl($("#ios-sheet")); };
 
   async function boot() {
     bindStatic();

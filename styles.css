@@ -479,3 +479,44 @@ p.fine.car-live { font-weight: 500; }
 .saved-row .rb-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .saved-row .rb-text small { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist .btn { align-self: flex-start; }
+
+/* ---------- Smooth transitions ---------- */
+@keyframes w-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes w-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes w-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes w-left-in { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes w-left-out { from { transform: none; } to { transform: translateX(-100%); } }
+@keyframes w-up-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes w-down-out { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes w-toast-in { from { opacity: 0; transform: translate(-50%, -10px) scale(.97); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes w-toast-out { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -8px); } }
+:root { --ease: cubic-bezier(.2, .8, .2, 1); }
+
+/* bottom-sheet views (home → choose a ride → live ride → feedback) and log-in tabs */
+.sv:not([hidden]) { animation: w-fade-up .28s var(--ease) both; }
+/* switching between the map and the other pages */
+.ride-screen:not([hidden]) { animation: w-fade-in .22s ease both; }
+#page:not([hidden]) .section[id^="tab-"]:not([hidden]) { animation: w-fade-up .3s var(--ease) both; }
+/* menu */
+.drawer-wrap:not([hidden]) { animation: w-fade-in .22s ease both; }
+.drawer-wrap:not([hidden]) .drawer { animation: w-left-in .3s var(--ease) both; }
+.drawer-wrap.closing { animation: w-fade-out .22s ease both; }
+.drawer-wrap.closing .drawer { animation: w-left-out .22s ease-in both; }
+/* safety and install sheets */
+.sheet-wrap:not([hidden]) { animation: w-fade-in .22s ease both; }
+.sheet-wrap:not([hidden]) .sheet { animation: w-up-in .32s var(--ease) both; }
+.sheet-wrap.closing { animation: w-fade-out .22s ease both; }
+.sheet-wrap.closing .sheet { animation: w-down-out .22s ease-in both; }
+/* address search and pin picker */
+.search-screen:not([hidden]) { animation: w-fade-up .26s var(--ease) both; }
+.picker:not([hidden]) { animation: w-fade-in .22s ease both; }
+/* messages */
+.toast:not([hidden]) { animation: w-toast-in .26s var(--ease) both; }
+.toast.closing { animation: w-toast-out .2s ease-in both; }
+/* buttons respond to touch */
+.btn, .row-btn, .act, .place-chip, .dr-item, .pill-btn, .whereto, .trip-row, .fab, .iconbtn, .flag, .theme-btn, .pill {
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease, transform .12s ease, box-shadow .15s ease; }
+.btn:active:not(:disabled), .row-btn:active, .act:active, .place-chip:active, .dr-item:active, .pill-btn:active, .whereto:active, .fab:active, .iconbtn:active { transform: scale(.97); }
+.dr-item:hover { background-color: var(--surface); }
+/* the ride steps fill smoothly */
+.step i { transition: background-color .4s ease; }
