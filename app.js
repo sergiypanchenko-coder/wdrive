@@ -875,7 +875,7 @@
     const tn = $("#su-tname").value.trim(), tp = $("#su-tphone").value.trim();
     const btn = $("#su-submit"); busy(btn, true, "Creating your account…");
     try {
-      const j = await authFetch("signup?redirect_to=" + encodeURIComponent(SITE), { email: email, password: pw, data: { name: name, phone: phone, trusted_name: tn, trusted_phone: tp, privacy_accepted_at: nowISO() } });
+      const j = await authFetch("signup?redirect_to=" + encodeURIComponent(SITE), { email: email, password: pw, data: { name: name, phone: phone, trusted_name: tn, trusted_phone: tp, privacy_accepted_at: nowISO(), lang: window.WUBBER_LANG === "it" ? "it" : "en" } });
       $("#signup-form").reset();
       if (j.access_token) {
         saveSession(toSession(j));
@@ -1144,11 +1144,20 @@
     if (!r) return;
     const f = $("#fb-form");
     const val = function (n) { const el = f.querySelector('input[name="' + n + '"]:checked'); return el ? el.value : null; };
-    const fb = { rating: val("rating") ? Number(val("rating")) : null, safety: val("safety"), freq: val("freq"), price: val("price"), comment: $("#fb-comment").value.trim(), at: nowISO() };
-    if (!fb.rating && !fb.safety && !fb.freq && !fb.price && !fb.comment) { toast("Pick at least one answer, or skip feedback.", true); return; }
+    const fb = { driver_rating: val("drating") ? Number(val("drating")) : null, rating: val("rating") ? Number(val("rating")) : null, safety: val("safety"), freq: val("freq"), price: val("price"), comment: $("#fb-comment").value.trim(), at: nowISO() };
+    if (!fb.driver_rating && !fb.rating && !fb.safety && !fb.freq && !fb.price && !fb.comment) { toast("Pick at least one answer, or skip feedback.", true); return; }
     const ok = await write(function () { return db.rpc("rider_action", { p_ride: r.id, p_action: "feedback", p_feedback: fb }); }, "Thank you! Feedback sent.");
     if (ok) { S.dismissed.add(r.id); renderRide(); window.scrollTo(0, 0); }
   }
+
+  /* ---------- Driver star ratings ---------- */
+  function driverStats(id) {
+    const rs = S.rides.filter(function (r) { return r.driverId === id && r.feedback && r.feedback.driver_rating; });
+    if (!rs.length) return null;
+    const avg = rs.reduce(function (s, r) { return s + Number(r.feedback.driver_rating); }, 0) / rs.length;
+    return { avg: avg.toFixed(1), n: rs.length };
+  }
+  function starsText(st) { return st ? "★ " + st.avg + " (" + st.n + ")" : ""; }
 
   /* ---------- Rows from the database → objects the screens use ---------- */
   const RIDE_COLS = "id,created_at,rider_id,passenger_name,passenger_phone,pickup,pickup_lat,pickup_lng,dropoff,dropoff_lat,dropoff_lng," +
@@ -1205,6 +1214,8 @@
     } else {
       const mine = S.rides.filter(function (r) { return r.driverId === me.id && (r.status === "assigned" || r.status === "on_trip"); });
       const done = S.rides.filter(function (r) { return r.driverId === me.id && r.status === "completed"; }).length;
+      const myStars = driverStats(me.id);
+      if (myStars) html += '<div class="card plain rating-card"><span class="big-star" aria-hidden="true">★</span><div class="stack" style="gap:2px"><b>' + myStars.avg + ' / 5</b><span class="fine">Your rating from passengers (' + myStars.n + ")</span></div></div>";
       html += '<div class="sec-head"><h2>Your rides</h2><span class="count">' + done + " completed</span></div>";
       if (!mine.length) html += '<div class="empty">No rides assigned right now. Keep this screen open during your shift; new rides appear here automatically.</div>';
       mine.forEach(function (r) {
@@ -1415,7 +1426,7 @@
     if (others.length) {
       dh += '<div class="item">' + others.map(function (d) {
         const n = rides.filter(function (r) { return r.driverId === d.id && r.status === "completed"; }).length;
-        return '<div class="row" style="justify-content:space-between"><div class="stack" style="gap:0"><b>' + esc(d.name) + '</b><span class="fine">' + esc(d.phone || "") + (d.car ? " · " + esc(d.car) : "") + " · " + n + " rides</span></div>" +
+        return '<div class="row" style="justify-content:space-between"><div class="stack" style="gap:0"><b>' + esc(d.name) + '</b><span class="fine">' + esc(d.phone || "") + (d.car ? " · " + esc(d.car) : "") + " · " + n + " rides" + (driverStats(d.id) ? " · " + starsText(driverStats(d.id)) : "") + "</span></div>" +
           '<span class="chip ' + esc(d.status) + '">' + (d.status === "verified" ? "Verified" : "Not approved") + "</span></div>";
       }).join('<hr style="border:0;border-top:1px solid var(--line);margin:0;width:100%">') + "</div>";
     }
@@ -1428,7 +1439,7 @@
       const fb = r.feedback && !r.feedback.skipped ? r.feedback : null;
       return '<article class="item"><div class="item-head"><span class="chip ' + r.status + '">' + (r.status === "completed" ? "Completed" : "Cancelled") + "</span><time>" + esc(ago(r.completedAt || r.cancelledAt || r.createdAt)) + "</time></div>" + rideRoute(r) +
         '<p class="fine">' + esc(r.passengerName) + (r.driverId ? " with " + esc(dname(r.driverId)) : "") + (r.fare ? " · €" + esc(r.fare) : "") +
-        (fb ? " · rated " + (fb.rating || "–") + "/5" : (r.status === "completed" ? " · no feedback yet" : "")) + "</p></article>";
+        (fb ? " · rated " + (fb.rating || "–") + "/5" + (fb.driver_rating ? " · driver ★" + fb.driver_rating : "") : (r.status === "completed" ? " · no feedback yet" : "")) + "</p></article>";
     }).join("") : '<div class="empty">Completed and cancelled rides are listed here.</div>');
 
     $("#export-card").hidden = !S.dl;
@@ -1557,7 +1568,7 @@
         ["Price €", function (r) { return r.fare; }], ["Driver", function (r) { return dn(r.driverId); }],
         ["Assigned at", function (r) { return r.assignedAt; }], ["Completed at", function (r) { return r.completedAt; }], ["Cancelled by", function (r) { return r.cancelledBy; }],
         ["Emergency pressed", function (r) { return r.sos ? "yes" : "no"; }],
-        ["Rating", function (r) { return fb(r, "rating"); }], ["Felt", function (r) { return fb(r, "safety"); }], ["Frequency", function (r) { return fb(r, "freq"); }],
+        ["Driver rating", function (r) { return fb(r, "driver_rating"); }], ["Rating", function (r) { return fb(r, "rating"); }], ["Felt", function (r) { return fb(r, "safety"); }], ["Frequency", function (r) { return fb(r, "freq"); }],
         ["Price acceptance", function (r) { return fb(r, "price"); }], ["Comment", function (r) { return fb(r, "comment"); }],
         ["Feedback skipped", function (r) { return r.feedback && r.feedback.skipped ? "yes" : ""; }]
       ]));

@@ -1,0 +1,33 @@
+<!doctype html>
+<html><body style="margin:0;padding:0;background:#FFF2F7">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFF2F7"><tr><td align="center" style="padding:32px 12px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#FFFFFF;border-radius:20px">
+    <tr><td align="center" style="padding:32px 32px 8px"><img src="https://wubber-pi.vercel.app/logo-full.png" width="150" alt="Wubber" style="display:block;width:150px;height:auto;border:0"></td></tr>
+    {{ if eq (printf "%v" .Data.lang) "it" }}
+    <tr><td style="padding:8px 32px 0;font-family:Arial,Helvetica,sans-serif;color:#2E1242">
+      <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#2E1242">Conferma la tua email</h1>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.5">Ciao{{ if .Data.name }} {{ .Data.name }}{{ end }},</p>
+      <p style="margin:0 0 24px;font-size:16px;line-height:1.5">Grazie per esserti iscritta al pilota Wubber a Torino. Tocca il pulsante qui sotto per confermare la tua email e iniziare a prenotare corse con autiste verificate.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#C42A6F" style="border-radius:999px">
+        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:999px">Conferma la mia email</a>
+      </td></tr></table>
+      <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#6E4B7C">Se non hai creato tu un account Wubber, ignora questa email.</p>
+    </td></tr>
+    {{ else }}
+    <tr><td style="padding:8px 32px 0;font-family:Arial,Helvetica,sans-serif;color:#2E1242">
+      <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#2E1242">Confirm your email</h1>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.5">Hi{{ if .Data.name }} {{ .Data.name }}{{ end }},</p>
+      <p style="margin:0 0 24px;font-size:16px;line-height:1.5">Thanks for joining the Wubber pilot in Torino. Tap the button below to confirm your email and start booking rides with verified female drivers.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#C42A6F" style="border-radius:999px">
+        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:999px">Confirm my email</a>
+      </td></tr></table>
+      <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#6E4B7C">If you didn't create a Wubber account, you can ignore this email.</p>
+    </td></tr>
+    {{ end }}
+    <tr><td style="padding:28px 32px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#6E4B7C;border-top:1px solid #EDC8DF">
+      Wubber · Torino pilot · <a href="https://www.instagram.com/wubber2027/" style="color:#540CAA">@wubber2027</a><br>
+      <a href="https://wubber-pi.vercel.app/privacy.html" style="color:#540CAA">Privacy</a>
+    </td></tr>
+  </table>
+</td></tr></table>
+</body></html>
