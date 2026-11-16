@@ -299,9 +299,29 @@
     "She pressed the emergency button. The pilot team has been alerted.": "Ha premuto il pulsante di emergenza. Il team è stato avvisato.",
     "Arrived safely.": "Arrivata sana e salva.",
     "Her driver": "La sua autista",
-    "Can't reach Wubber right now. Retrying…": "Impossibile raggiungere Wubber ora. Riprovo…"
+    "Can't reach Wubber right now. Retrying…": "Impossibile raggiungere Wubber ora. Riprovo…",
+    // Added 16 Nov: pieces that were still in English
+    "Ride progress": "Avanzamento della corsa",
+    "Your driver": "La tua autista",
+    "Navigate to pickup in Google Maps": "Vai alla partenza con Google Maps",
+    "Navigate to drop-off in Google Maps": "Vai alla destinazione con Google Maps",
+    "Choose a stronger password (at least 8 characters).": "Scegli una password più sicura (almeno 8 caratteri).",
+    "New sign-ups are switched off in the database settings.": "Le nuove iscrizioni sono disattivate nelle impostazioni del database.",
+    "Your account has no profile. Make sure the database setup script ran, then create the account again.": "Il tuo account non ha un profilo. Verifica che lo script del database sia stato eseguito, poi crea di nuovo l'account.",
+    "This site isn't connected to its database yet. Fill in config.js.": "Questo sito non è ancora collegato al database. Compila config.js.",
+    "This website isn't connected to its database yet. Put your Supabase Project URL and anon key in": "Questo sito non è ancora collegato al database. Inserisci l'URL del progetto Supabase e la chiave anon in",
+    ", then reload the page.": ", poi ricarica la pagina.",
+    "Language": "Lingua",
+    "pilot team": "team del pilota",
+    "price by hand": "prezzo da definire",
+    "estimate": "stima",
+    "no feedback yet": "ancora nessun feedback",
+    "Female driver requested": "Richiesta autista donna",
+    "Any verified driver": "Qualsiasi autista verificata"
   };
 
+  var MONTHS = { January: "gennaio", February: "febbraio", March: "marzo", April: "aprile", May: "maggio", June: "giugno", July: "luglio", August: "agosto", September: "settembre", October: "ottobre", November: "novembre", December: "dicembre" };
+  function itDate(s) { return s.replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/g, function (m) { return MONTHS[m]; }); }
   var MON = { Jan: "gen", Feb: "feb", Mar: "mar", Apr: "apr", May: "mag", Jun: "giu", Jul: "lug", Aug: "ago", Sep: "set", Oct: "ott", Nov: "nov", Dec: "dic" };
   function T(s) { return D[s] != null ? D[s] : s; }
   var P = [
@@ -312,7 +332,7 @@
     [/^Required\. Still needed: (.+)\.$/, function (m) { return "Obbligatorio. Mancano ancora: " + m[1].split(", ").map(T).join(", ") + "."; }],
     [/^Account created\. Welcome, (.+)!$/, function (m) { return "Account creato. Benvenuta, " + m[1] + "!"; }],
     [/^Hi (.+)$/, function (m) { return "Ciao " + m[1]; }],
-    [/^(.+) is on her way$/, function (m) { return m[1] + " sta arrivando"; }],
+    [/^(.+) is on her way$/, function (m) { return T(m[1]) + " sta arrivando"; }],
     [/^Pickup in about (\d+) min · (.+)$/, function (m) { return "Arrivo tra circa " + m[1] + " min · " + m[2]; }],
     [/^Pickup in about (\d+) min$/, function (m) { return "Arrivo tra circa " + m[1] + " min"; }],
     [/^Heading to (.+)$/, function (m) { return "Verso " + m[1]; }],
@@ -328,9 +348,20 @@
     [/^You made it to (.+)\. Two minutes of feedback helps us decide whether to launch\.$/, function (m) { return "Sei arrivata a " + m[1] + ". Due minuti di feedback ci aiutano a decidere se lanciare il servizio."; }],
     [/^(\d+) completed$/, function (m) { return m[1] + " completate"; }],
     [/^(\d+) waiting$/, function (m) { return m[1] + " in attesa"; }],
-    [/^(\d+) completed rides?(.*)$/, function (m) {
-      return m[1] + (m[1] === "1" ? " corsa completata" : " corse completate") + m[2].replace(" · member since ", " · iscritta dal ").replace(" · pilot team", " · team del pilota");
-    }],
+    [/^(\d+) completed rides?$/, function (m) { return m[1] + (m[1] === "1" ? " corsa completata" : " corse completate"); }],
+    [/^member since (.+)$/, function (m) { return "iscritta dal " + itDate(m[1]); }],
+    [/^(\d+) rides?$/, function (m) { return m[1] + (m[1] === "1" ? " corsa" : " corse"); }],
+    [/^(\d+) verified$/, function (m) { return m[1] + (m[1] === "1" ? " verificata" : " verificate"); }],
+    [/^(\d+) signed up$/, function (m) { return m[1] + (m[1] === "1" ? " iscritta" : " iscritte"); }],
+    [/^(\d+) answers?$/, function (m) { return m[1] + (m[1] === "1" ? " risposta" : " risposte"); }],
+    [/^(\d+)% monthly or more$/, function (m) { return m[1] + "% almeno una volta al mese"; }],
+    [/^estimate (€[\d.,]+–[\d.,]+)$/, function (m) { return "stima " + m[1]; }],
+    [/^rated (.+)$/, function (m) { return "voto " + m[1]; }],
+    [/^Completed \((\d+) of (\d+)\)$/, function (m) { return "Completate (" + m[1] + " su " + m[2] + ")"; }],
+    [/^Average rating \((\d+)\)$/, function (m) { return "Voto medio (" + m[1] + ")"; }],
+    [/^(.+) \(on a ride\)$/, function (m) { return m[1] + " (in corsa)"; }],
+    [/^Something went wrong \((.+)\)\. Try again\.$/, function (m) { return "Qualcosa è andato storto (" + m[1] + "). Riprova."; }],
+    [/^([^·]+) with ([^·]+)$/, function (m) { return m[1] + " con " + m[2]; }],
     [/^Closest number to (.+) · Torino$/, function (m) { return "Numero più vicino al " + m[1] + " · Torino"; }],
     [/^Near (.+)$/, function (m) { return "Vicino a " + m[1]; }],
     [/^About (\d+) m away · pin placed exactly$/, function (m) { return "A circa " + m[1] + " m · segnaposto preciso"; }],
@@ -357,6 +388,17 @@
   function T2(t) {
     if (D[t] != null) return D[t];
     for (var i = 0; i < P.length; i++) { var m = t.match(P[i][0]); if (m) return P[i][1](m); }
+    // Lines like "Anna · +39 … · estimate €9–12": translate each piece.
+    if (t.indexOf(" · ") !== -1 || / ·$/.test(t)) {
+      var parts = t.split(" ·"), changed = false;
+      for (var j = 0; j < parts.length; j++) {
+        var lead = parts[j].match(/^\s*/)[0], core = parts[j].trim();
+        if (!core) continue;
+        var x = T2(core);
+        if (x != null && x !== core) { parts[j] = lead + x; changed = true; }
+      }
+      if (changed) return parts.join(" ·");
+    }
     return null;
   }
   function tr(s) {
