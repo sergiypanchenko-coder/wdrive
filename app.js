@@ -706,6 +706,7 @@
   const PAGES = { drive: "Drive with us", team: "Pilot dashboard", socials: "Socials", account: "Your account" };
   function go(t) {
     closeDrawer();
+    if (!S.account && S.guest && (t === "account" || t === "drive")) { needLogin(t === "drive" ? "Create an account to sign up as a driver." : "Log in or create an account to see your account."); return; }
     if (isLocked() || (t === "team" && !isTeam())) t = "ride";
     S.tab = t;
     lsSet("wsr.tab", t);
@@ -898,7 +899,15 @@
   /* ---------- Accounts (Supabase Auth) ---------- */
   function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || "").trim()); }
   function phoneOk(v) { const d = String(v || "").replace(/\D/g, ""); return d.length >= 8 && d.length <= 15; }
-  function isLocked() { return !S.account; }
+  function isLocked() { return !S.account && !S.guest; }
+  // Guests can look around (map, search, prices) without an account.
+  function skipLogin() { S.guest = true; lsSet("wubber.guest", "1"); go("ride"); }
+  function needLogin(msg, mode) {
+    S.guest = false; lsSet("wubber.guest", "");
+    setAuthMode(mode || "signup");
+    go("ride");
+    if (msg) toast(msg);
+  }
   function isTeam() { return !!(S.account && S.account.role === "team"); }
   function signupMissing() {
     const miss = [];
@@ -954,6 +963,7 @@
     return true;
   }
   async function afterAuth(welcome) {
+    S.guest = false; lsSet("wubber.guest", "");
     try {
       const ok = await loadMe();
       if (!ok) throw apiError("Your account has no profile. Make sure the database setup script ran, then create the account again.", "noprofile", 0);
@@ -1260,6 +1270,7 @@
       showView("auth");
       $("#auth-loading").hidden = !S.authChecking;
       $("#auth-forms").hidden = !!S.authChecking;
+      $(".skip-btn").hidden = !!S.authChecking;
       requestAnimationFrame(function () { updateMainMap(null, null, "auth"); });
       return;
     }
@@ -1297,7 +1308,7 @@
     const a = S.fields.from.sel, b = S.fields.to.sel;
     if (!a || !b) { S.rideView = "home"; renderRide(); return; }
     if (S.samePlace) return;
-    if (!S.account) { toast("Log in to book a ride.", true); return; }
+    if (!S.account) { needLogin("Create an account or log in to book this ride. Your addresses are kept."); return; }
     const acc = S.account;
     const id = uuid();
     const row = {
@@ -1657,6 +1668,8 @@
     },
     "auth-mode": function (b) { setAuthMode(b.dataset.mode); },
     "logout": function () { logout(); },
+    "skip-login": function () { skipLogin(); },
+    "login-now": function () { needLogin(null, "login"); },
     "locate-from": function () { locate("from"); },
     "menu": function () { openDrawer(); },
     "go": function (b) { go(b.dataset.to); },
@@ -1864,6 +1877,7 @@
     const locked = isLocked();
     document.body.classList.toggle("locked", locked);
     $("#dr-team").hidden = !isTeam();
+    $("#dr-login").hidden = !(S.guest && !S.account);
     if (locked) {
       closeDrawer();
       if (S.tab !== "ride") { go("ride"); return; }
@@ -1966,6 +1980,7 @@
       if (SESSION) await afterAuth(null);
       else { S.authChecking = false; renderAll(); }
     } else {
+      S.guest = lsGet("wubber.guest") === "1";
       go("ride");
     }
   }
