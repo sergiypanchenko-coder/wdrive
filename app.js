@@ -816,8 +816,10 @@
       const road = roadRoute(a, b);
       const km = road ? pathLengthKm(road) : haversineKm(a, b) * 1.3;
       const min = Math.max(4, Math.round((km / 22) * 60));
-      const fare = Math.max(7, 3.5 + 1.3 * km + 0.3 * min) * 1.5;
-      S.est = { lo: Math.round(fare * 0.9), hi: Math.round(fare * 1.15), km: Math.round(km * 10) / 10, min: min };
+      // Roughly what UberX charges in Torino (a ~5 km, 14 min trip ≈ €15–20), then €1–2 more.
+      const uber = Math.max(8, 4 + 2.0 * km + 0.3 * min);
+      const lo = Math.round(uber * 0.86) + 1, hi = Math.round(uber * 1.1) + 2;
+      S.est = { lo: lo, hi: Math.max(hi, lo + 2), km: Math.round(km * 10) / 10, min: min };
     }
   }
 
