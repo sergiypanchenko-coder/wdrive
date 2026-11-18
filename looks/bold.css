@@ -1,5 +1,5 @@
 /* Wubber look: "Bold purple". A serif that echoes the logo, neutral greys, purple as the one strong colour. */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Instrument+Sans:wght@400;500;600;700&display=swap");
+@import url("fonts-bold.css");
 :root[data-look="bold"] {
   --bg: #FFFFFF; --surface: #F4F1F8; --surface-2: #EAE4F2; --line: #E4DEEC;
   --ink: #1B1026; --muted: #6B6178;

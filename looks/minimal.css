@@ -1,5 +1,5 @@
 /* Wubber look: "Clean minimal". Black and white like the big ride apps, flat lists, purple only for the brand and the car. */
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap");
+@import url("fonts-minimal.css");
 :root[data-look="minimal"] {
   --bg: #FFFFFF; --surface: #F3F3F3; --surface-2: #EAEAEA; --line: #E8E8E8;
   --ink: #0B0B0C; --muted: #5E5E64;

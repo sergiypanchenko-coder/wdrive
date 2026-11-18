@@ -1,5 +1,5 @@
 /* Wubber look: "Night city". Dark by default with neon pink and violet, a wide display font for headings. */
-@import url("https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Inter:wght@400;500;600;700&display=swap");
+@import url("fonts-night.css");
 :root[data-look="night"], :root[data-look="night"][data-theme="dark"], :root[data-look="night"][data-theme="light"] {
   --bg: #0E0A14; --surface: #19121F; --surface-2: #231A2C; --line: #2C2236;
   --ink: #F6F0FB; --muted: #A99BB8;
