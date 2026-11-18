@@ -975,7 +975,7 @@
     '<rect x="9" y="3.5" width="22" height="33" rx="10" fill="#EE5C98" stroke="#FFFFFF" stroke-width="2"/>' +
     '<rect x="12" y="10" width="16" height="7" rx="3" fill="#D9EEFF"/>' +
     '<rect x="12" y="17.5" width="16" height="10" rx="3.5" fill="#540CAA"/>' +
-    '<path d="M20 25.3c-.2 0-3.4-2-3.4-4.1 0-1.1.8-1.9 1.8-1.9.7 0 1.3.4 1.6 1 .3-.6.9-1 1.6-1 1 0 1.8.8 1.8 1.9 0 2.1-3.2 4.1-3.4 4.1z" fill="#FFFFFF"/>' +
+    '<image href="logo-mark-white.png" x="13.2" y="18.4" width="13.6" height="8.7" preserveAspectRatio="xMidYMid meet"/>' +
     '<rect x="13" y="28.5" width="14" height="4" rx="2" fill="#D9EEFF" opacity=".85"/>' +
     '<circle cx="14" cy="6.6" r="1.7" fill="#FFE27A"/><circle cx="26" cy="6.6" r="1.7" fill="#FFE27A"/>' +
     '<circle cx="12.6" cy="34.2" r="1.2" fill="#FF3B5C"/><circle cx="27.4" cy="34.2" r="1.2" fill="#FF3B5C"/></svg>';
