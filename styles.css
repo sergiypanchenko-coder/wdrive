@@ -539,3 +539,5 @@ body.locked .handle-bar { display: none; }
 .skip-btn { display: block; margin: 6px auto 0; padding: 10px 16px; background: none; border: 0; font: inherit; font-size: 14px; color: var(--muted); opacity: .75; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: opacity .15s ease, text-decoration-color .15s ease; }
 .skip-btn:hover, .skip-btn:focus-visible { opacity: 1; text-decoration-color: currentColor; }
 .dr-login { color: var(--accent); font-weight: 700; }
+
+.demo-note { margin: 0; font-size: 12.5px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 6px 10px; }

@@ -725,6 +725,7 @@
 
   /* ---------- RIDE ---------- */
   function currentRide() {
+    if (DEMO.ride) return DEMO.ride;
     if (S.pendingRide) {
       if (S.rides.some(function (x) { return x.id === S.pendingRide.id; })) S.pendingRide = null;
       else return S.pendingRide;
@@ -734,7 +735,71 @@
       return r.accountId === S.account.id && !r.passengerDismissed && !S.dismissed.has(r.id) && !(r.status === "completed" && r.feedback);
     }) || null;
   }
-  function driverOf(r) { return r && r.driverId ? S.drivers.find(function (d) { return d.id === r.driverId; }) : null; }
+  function driverOf(r) {
+    if (r && r.demo) return r.status === "requested" ? null : DEMO_DRIVER;
+    return r && r.driverId ? S.drivers.find(function (d) { return d.id === r.driverId; }) : null;
+  }
+
+  /* ---------- Demo ride: a simulated driver drives to you (mock app) ---------- */
+  // Set demoRides: false in config.js to send real ride requests to the pilot team instead.
+  const DEMO = { on: !(window.WSR_CONFIG && window.WSR_CONFIG.demoRides === false), ride: null, timers: [], raf: null, lastRender: 0 };
+  const DEMO_DRIVER = { id: "demo-driver", name: "Chiara Rossi", phone: "", ncc: "yes", car: "White Fiat 500", plate: "GH 482 KT", photoUrl: "", status: "verified" };
+  function demoLater(fn, ms) { DEMO.timers.push(setTimeout(fn, ms)); }
+  function stopDemo() {
+    DEMO.timers.forEach(clearTimeout); DEMO.timers = [];
+    if (DEMO.raf) cancelAnimationFrame(DEMO.raf); DEMO.raf = null;
+    DEMO.ride = null;
+  }
+  function demoDrive(from, to, ms, onDone) {
+    const r = DEMO.ride; if (!r) return;
+    const t0 = performance.now();
+    const ease = function (t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
+    function frame(now) {
+      if (DEMO.ride !== r) return;
+      const t = Math.min(1, (now - t0) / ms), e = ease(t);
+      r.carPos = { lat: from.lat + (to.lat - from.lat) * e, lng: from.lng + (to.lng - from.lng) * e, at: nowISO() };
+      if (r.status === "assigned") r.etaMin = Math.max(1, Math.ceil((1 - t) * 4));
+      updateCar(r);
+      if (now - DEMO.lastRender > 900) { DEMO.lastRender = now; renderRide(); }
+      if (t < 1) DEMO.raf = requestAnimationFrame(frame);
+      else { DEMO.raf = null; onDone(); }
+    }
+    DEMO.raf = requestAnimationFrame(frame);
+  }
+  function startDemo(a, b) {
+    stopDemo();
+    const ang = Math.random() * Math.PI * 2, km = 1.1 + Math.random() * 0.5;
+    const start = { lat: a.lat + Math.sin(ang) * km / 111, lng: a.lng + Math.cos(ang) * km / (111 * Math.cos(a.lat * Math.PI / 180)) };
+    const est = S.est;
+    const r = DEMO.ride = {
+      id: "demo-" + Date.now(), demo: true, status: "requested", createdAt: nowISO(),
+      pickup: a.label, dropoff: b.label, pickupPos: { lat: a.lat, lng: a.lng }, dropoffPos: { lat: b.lat, lng: b.lng },
+      pin: String(1000 + Math.floor(Math.random() * 9000)), fareEst: est ? { lo: est.lo, hi: est.hi } : null, fare: null, etaMin: null, carPos: null,
+      sos: false, sosResolved: false, feedback: null
+    };
+    S.fields.from.sel = null; S.fields.to.sel = null; $("#from").value = ""; $("#to").value = "";
+    S.est = null; S.rideView = "home";
+    renderRide();
+    setTimeout(function () { setSheetCollapsed(true); }, 60);
+    demoLater(function () {
+      r.status = "assigned"; r.assignedAt = nowISO();
+      r.fare = est ? Math.round((est.lo + est.hi) / 2) : null;
+      r.carPos = { lat: start.lat, lng: start.lng, at: nowISO() };
+      renderRide();
+      demoDrive(start, r.pickupPos, 18000, function () {
+        r.arrived = true; r.etaMin = null;
+        setSheetCollapsed(false); renderRide();
+        demoLater(function () {
+          r.status = "on_trip"; r.startedAt = nowISO(); r.arrived = false;
+          renderRide(); setTimeout(function () { setSheetCollapsed(true); }, 60);
+          demoDrive(r.pickupPos, r.dropoffPos, 22000, function () {
+            r.status = "completed"; r.completedAt = nowISO(); r.carPos = null;
+            updateCar(null); renderRide();
+          });
+        }, 5000);
+      });
+    }, 3500);
+  }
 
   function shareLink(r) { return r && r.shareToken ? SITE + "trip.html?t=" + r.shareToken : ""; }
   function shareText(r) {
@@ -773,7 +838,7 @@
   }
 
   /* ---------- The car on the rider's map ---------- */
-  const CAR_ICON_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16.5h16v-3.2c0-.8-.5-1.5-1.2-1.8l-1.6-.6-1.8-3.4A2 2 0 0013.6 6.5h-3.2a2 2 0 00-1.8 1L6.8 10.9l-1.6.6C4.5 11.8 4 12.5 4 13.3v3.2z"/><circle cx="7.5" cy="16.5" r="1.7"/><circle cx="16.5" cy="16.5" r="1.7"/></svg>';
+  const CAR_ICON_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>';
   let carMarker = null, carRide = null;
   function updateCar(r) {
     const m = MAPS.main;
@@ -1220,6 +1285,7 @@
     const names = ["Requested", "Driver assigned", "On the way", "Arrived"];
     let title, sub;
     if (r.status === "requested") { title = "Finding your driver"; sub = "Our team is matching you with a verified female driver."; }
+    else if (r.status === "assigned" && r.arrived) { title = esc(first(d && d.name)) + " has arrived"; sub = "Look for the " + esc(d.car) + " · " + esc(d.plate) + ". Tell her your PIN."; }
     else if (r.status === "assigned") { title = esc(first(d && d.name)) + " is on her way"; sub = (r.etaMin ? "Pickup in about " + esc(r.etaMin) + " min · " : "") + esc(r.pickup); }
     else { title = "Heading to " + esc(r.dropoff); sub = "Enjoy your ride. Your trip is shared with the pilot team."; }
     let html = '<div class="live-head"><div class="stack" style="gap:4px;min-width:0"><h2>' + title + '</h2><p class="muted">' + sub + "</p></div>";
@@ -1228,7 +1294,8 @@
         r.pin.split("").map(function (c) { return "<span>" + esc(c) + "</span>"; }).join("") + "</div></div>";
     }
     html += "</div>";
-    if (carDistanceText(r)) html += '<p class="car-live"><span class="live-dot" aria-hidden="true"></span>' + esc(carDistanceText(r)) + "</p>";
+    if (r.demo) html += '<p class="demo-note">Demo ride: the driver and her car are simulated.</p>';
+    if (carDistanceText(r) && !r.arrived) html += '<p class="car-live"><span class="live-dot" aria-hidden="true"></span>' + esc(carDistanceText(r)) + "</p>";
     html += '<div class="steps" aria-label="Ride progress">' + names.map(function (n, i) { return '<div class="step' + (i <= idx ? " done" : "") + '"><i></i>' + n + "</div>"; }).join("") + "</div>";
     if (r.status !== "on_trip") html += '<p class="fine">Tell your driver your PIN. She can only start the trip with it.</p>';
     if (r.sos && !r.sosResolved) html += '<div class="alert">Pilot team alerted at ' + esc(hhmm(r.sosAt)) + ". Call 112 if you are in danger.</div>";
@@ -1308,6 +1375,7 @@
     const a = S.fields.from.sel, b = S.fields.to.sel;
     if (!a || !b) { S.rideView = "home"; renderRide(); return; }
     if (S.samePlace) return;
+    if (DEMO.on) { if (a.lat == null || b.lat == null) { toast("Choose both addresses from the suggestions or the map.", true); return; } startDemo(a, b); return; }
     if (!S.account) { needLogin("Create an account or log in to book this ride. Your addresses are kept."); return; }
     const acc = S.account;
     const id = uuid();
@@ -1339,6 +1407,7 @@
     const val = function (n) { const el = f.querySelector('input[name="' + n + '"]:checked'); return el ? el.value : null; };
     const fb = { driver_rating: val("drating") ? Number(val("drating")) : null, rating: val("rating") ? Number(val("rating")) : null, safety: val("safety"), freq: val("freq"), price: val("price"), comment: $("#fb-comment").value.trim(), at: nowISO() };
     if (!fb.driver_rating && !fb.rating && !fb.safety && !fb.freq && !fb.price && !fb.comment) { toast("Pick at least one answer, or skip feedback.", true); return; }
+    if (r.demo) { stopDemo(); toast("Thank you! Feedback sent."); renderRide(); window.scrollTo(0, 0); return; }
     const ok = await write(function () { return db.rpc("rider_action", { p_ride: r.id, p_action: "feedback", p_feedback: fb }); }, "Thank you! Feedback sent.");
     if (ok) { S.dismissed.add(r.id); renderRide(); window.scrollTo(0, 0); }
   }
@@ -1662,6 +1731,7 @@
     "picker-close": function () { closePicker(); },
     "picker-confirm": function () { confirmPick(); },
     "new-ride": function () {
+      if (DEMO.ride) { stopDemo(); S.rideView = "home"; renderRide(); return; }
       const r = currentRide();
       if (r) { S.dismissed.add(r.id); db.rpc("rider_action", { p_ride: r.id, p_action: "dismiss" }).catch(function () {}); }
       S.rideView = "home"; renderRide();
@@ -1709,10 +1779,12 @@
     },
     "cancel-ride": function () {
       const r = currentRide(); if (!r) return;
+      if (r.demo) { stopDemo(); updateCar(null); S.rideView = "home"; renderRide(); toast("Ride cancelled"); return; }
       write(function () { return db.rpc("rider_action", { p_ride: r.id, p_action: "cancel" }); }, "Ride cancelled");
     },
     "copy-share": function () {
       const r = currentRide(); if (!r) return;
+      if (r.demo) { toast("In a real ride, this sends a live link to a friend."); return; }
       if (!r.shareToken) { toast("One moment, preparing your link…"); refresh(); return; }
       startSharing(r); renderRide();
       const text = shareText(r);
@@ -1728,6 +1800,7 @@
     },
     "wa-share": function () {
       const r = currentRide(); if (!r || !S.account) return;
+      if (r.demo) { toast("In a real ride, this sends a live link to a friend."); return; }
       if (!r.shareToken) { toast("One moment, preparing your link…"); refresh(); return; }
       startSharing(r); renderRide();
       const tp = String(S.account.trustedPhone || "").replace(/\D/g, "");
@@ -1741,11 +1814,13 @@
     "close-sos": function () { hideEl($("#sos-sheet")); },
     "alert-team": async function () {
       const r = currentRide(); if (!r) return;
+      if (r.demo) { toast("Demo ride: in a real ride, the pilot team would be alerted now."); return; }
       const ok = await write(function () { return db.rpc("rider_action", { p_ride: r.id, p_action: "sos" }); });
       if (ok) { S.sosAlerted = r.id; renderSos(); }
     },
     "fb-skip": async function () {
       const r = currentRide(); if (!r) return;
+      if (r.demo) { stopDemo(); renderRide(); return; }
       const ok = await write(function () { return db.rpc("rider_action", { p_ride: r.id, p_action: "feedback", p_feedback: { skipped: true, at: nowISO() } }); });
       if (ok) { S.dismissed.add(r.id); renderRide(); }
     },
