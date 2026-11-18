@@ -369,12 +369,16 @@
     1: { min: 0, w: 9, cas: "#D8CBEA", fill: "#E9DEF7" }, 2: { min: 0, w: 7.5, cas: "#DDD5E8", fill: "#FFFFFF" },
     3: { min: 13.5, w: 5, cas: "#E3DDEC", fill: "#FFFFFF" }, 4: { min: 14.5, w: 4, cas: "#E6E1EE", fill: "#FAF8FC" }, 5: { min: 15.5, w: 3, cas: "#E8E3EF", fill: "#FFFFFF" }
   };
+  const ROAD_WARM = {
+    1: { min: 0, w: 9, cas: "#F0C4D6", fill: "#F8DCE7" }, 2: { min: 0, w: 7.5, cas: "#DEDBE2", fill: "#FFFFFF" },
+    3: { min: 13.5, w: 5, cas: "#E3E1E6", fill: "#FFFFFF" }, 4: { min: 14.5, w: 4, cas: "#E6E4E9", fill: "#FAFAFB" }, 5: { min: 15.5, w: 3, cas: "#E8E6EB", fill: "#FFFFFF" }
+  };
   const ROAD_NEON = {
     1: { min: 0, w: 9, cas: "#4A1838", fill: "#7A2458" }, 2: { min: 0, w: 7.5, cas: "#1E1626", fill: "#2E2338" },
     3: { min: 13.5, w: 5, cas: "#1B1422", fill: "#271E30" }, 4: { min: 14.5, w: 4, cas: "#1A1320", fill: "#221A2A" }, 5: { min: 15.5, w: 3, cas: "#19121F", fill: "#251C2E" }
   };
   MAPC.minimal = { park: "#E3EEDF", water: "#D6E2EE", texture: "#E4E4E8", halo: "rgba(255,255,255,0.95)", label: "#3C3C44", dot: "#0B0B0C", spot: "#0B0B0C", road: ROAD_GREY };
-  MAPC.bold = { park: "#E2EEDC", water: "#D3E0F0", texture: "#E6E0EE", halo: "rgba(255,255,255,0.95)", label: "#4B3F5C", dot: "#540CAA", spot: "#540CAA", road: ROAD_LAV };
+  MAPC.bold = { park: "#E2EEDC", water: "#D3E0F0", texture: "#E7E5EA", halo: "rgba(255,255,255,0.95)", label: "#4A4452", dot: "#E0478A", spot: "#2A2233", road: ROAD_WARM };
   MAPC.night = { park: "#142A1E", water: "#14223A", texture: "#2A2033", halo: "rgba(14,10,20,0.92)", label: "#D9CCE8", dot: "#FF4FA0", spot: "#B98CFF", road: ROAD_NEON };
   function mapColors() {
     const look = document.documentElement.getAttribute("data-look"), dark = window.WUBBER_THEME === "dark";

@@ -5,8 +5,8 @@
   --ink: #1B1026; --muted: #6B6178;
   --accent: #540CAA; --accent-ink: #FFFFFF; --accent-soft: #EEE6FB;
   --brand: #540CAA; --brand-soft: #EEE6FB;
-  --map-bg: #F2F0F5;
-  --font-display: "Fraunces", Georgia, serif;
+  --map-bg: #F3F2F5;
+  --font-display: "Instrument Sans", "Segoe UI", sans-serif;
   --font-body: "Instrument Sans", "Segoe UI", sans-serif;
   --r-lg: 18px; --r-md: 12px;
   --shadow: 0 12px 30px rgba(27, 16, 38, .14);
@@ -15,8 +15,8 @@
   --bg: #141019; --surface: #1E1826; --surface-2: #281F33; --line: #2F2639; --ink: #F4EFFA; --muted: #A99DB8;
   --accent: #8B5CF6; --accent-soft: #2A1E44; --brand: #C4A4FF; --brand-soft: #2A1E44; --map-bg: #17121D;
 }
-[data-look="bold"] .greet { font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: -0.02em; }
-[data-look="bold"] h1, [data-look="bold"] h2, [data-look="bold"] h3 { font-weight: 800; letter-spacing: -0.015em; }
+[data-look="bold"] .greet { font-family: var(--font-display); font-weight: 700; font-size: 27px; letter-spacing: -0.025em; }
+[data-look="bold"] h1, [data-look="bold"] h2, [data-look="bold"] h3 { font-weight: 700; letter-spacing: -0.02em; }
 [data-look="bold"] .btn { border-radius: 14px; letter-spacing: .01em; }
 [data-look="bold"] .btn-primary { box-shadow: 0 8px 20px rgba(84, 12, 170, .28); }
 [data-look="bold"] .whereto { border-radius: 14px; background: var(--surface); font-weight: 700; }
@@ -27,3 +27,18 @@
 [data-look="bold"] .pin span { border-radius: 10px; border-width: 2px; font-family: var(--font-display); }
 [data-look="bold"] .ride-opt { border-radius: 16px; }
 [data-look="bold"] .badge { border-radius: 999px; }
+
+/* Less purple: keep it for the main buttons, logo, route and selected choice; everything else neutral, with a touch of pink. */
+:root[data-look="bold"]:not([data-theme="dark"]) { --accent-pink: #E0478A; }
+[data-look="bold"]:not([data-theme="dark"]) .dr-item[aria-current=page] { color: var(--ink); background: var(--surface); }
+[data-look="bold"]:not([data-theme="dark"]) .dr-login { color: var(--accent-pink); }
+[data-look="bold"]:not([data-theme="dark"]) .linkbtn, [data-look="bold"]:not([data-theme="dark"]) .auth-foot a { color: var(--ink); }
+[data-look="bold"]:not([data-theme="dark"]) .seg button[aria-selected=true] { color: var(--ink); }
+[data-look="bold"]:not([data-theme="dark"]) .place-chip svg, [data-look="bold"]:not([data-theme="dark"]) .promise svg { color: var(--ink); }
+[data-look="bold"]:not([data-theme="dark"]) .place-chip.empty small { color: var(--accent-pink); }
+[data-look="bold"]:not([data-theme="dark"]) .saved-row .ico, [data-look="bold"]:not([data-theme="dark"]) .social-ico { background: var(--surface); color: var(--ink); }
+[data-look="bold"]:not([data-theme="dark"]) .ride-opt .car { background: var(--surface); color: var(--ink); }
+[data-look="bold"]:not([data-theme="dark"]) .avatar { background: var(--accent-pink); }
+[data-look="bold"]:not([data-theme="dark"]) .flag[aria-pressed=true], [data-look="bold"]:not([data-theme="dark"]) .theme-btn[aria-pressed=true] { border-color: var(--ink); color: var(--ink); }
+[data-look="bold"]:not([data-theme="dark"]) .r-dot { background: var(--ink); box-shadow: inset 0 0 0 3.5px var(--ink), inset 0 0 0 6px var(--bg); }
+[data-look="bold"]:not([data-theme="dark"]) .btn-primary { box-shadow: 0 6px 16px rgba(84, 12, 170, .18); }

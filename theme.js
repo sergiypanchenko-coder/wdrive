@@ -6,26 +6,17 @@
   var KEY = "wubber.theme";
   function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
   function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
-  // Optional look to preview a restyle: open the site with ?look=bold, ?look=minimal or ?look=night (?look=off resets).
-  var LOOKS = { bold: 1, minimal: 1, night: 1 }, LK = "wubber.look";
-  try {
-    var q = new URLSearchParams(location.search).get("look");
-    if (q !== null) localStorage.setItem(LK, LOOKS[q] ? q : "");
-  } catch (e) {}
-  var look = ""; try { look = localStorage.getItem(LK) || ""; } catch (e) {}
-  if (LOOKS[look]) {
-    document.documentElement.setAttribute("data-look", look);
-    document.write('<link rel="stylesheet" href="looks/' + look + '.css">');
-  }
+  // Light mode uses the "Bold purple" look, dark mode the "Night city" look (looks/bold.css, looks/night.css).
   var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-  function current() { if (look === "night") return "dark"; var s = get(); return s === "dark" || s === "light" ? s : (mq && mq.matches ? "dark" : "light"); }
+  function current() { var s = get(); return s === "dark" || s === "light" ? s : (mq && mq.matches ? "dark" : "light"); }
 
   function apply(t, announce) {
     var root = document.documentElement;
     root.setAttribute("data-theme", t);
+    root.setAttribute("data-look", t === "dark" ? "night" : "bold");
     window.WUBBER_THEME = t;
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", t === "dark" ? "#17101F" : "#FFFFFF");
+    if (meta) meta.setAttribute("content", t === "dark" ? "#0E0A14" : "#FFFFFF");
     // Android colours its bottom bar from the app manifest, so swap it with the theme.
     var man = document.querySelector('link[rel="manifest"]');
     if (man) man.setAttribute("href", (t === "dark" ? "manifest-dark.webmanifest" : "manifest.webmanifest") + "?v=3");
