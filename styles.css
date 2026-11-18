@@ -557,4 +557,5 @@ body.locked .handle-bar { display: none; }
 .soon.live { background: var(--accent); color: var(--accent-ink); }
 .soon.live span { color: inherit; opacity: .85; }
 .leaflet-container.far .soon { opacity: 1; }
-.leaflet-container.very-far .soon.small { opacity: 0; }
+.soon-chip { position: absolute; z-index: 650; left: 50%; top: calc(80px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); padding: 7px 14px; border-radius: 999px; background: var(--bg); color: var(--ink); font-size: 13px; font-weight: 700; box-shadow: 0 2px 10px rgba(20, 10, 30, .2); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+.leaflet-container.far .soon-chip { opacity: 1; }

@@ -390,9 +390,10 @@
   function drawMap(ctx, z, w, h, offX, offY) {
     const F = MAPD.F; if (!F || z < 9) return;
     {
-      const sc = 256 * Math.pow(2, z), cx = mercX(AREA.lng) * sc - offX, cy = mercY(AREA.lat) * sc - offY;
-      const rx = (mercX(AREA.lng + AREA.rLng) - mercX(AREA.lng)) * sc, ry = (mercY(AREA.lat - AREA.rLat) - mercY(AREA.lat)) * sc;
-      ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.clip();
+      const sc = 256 * Math.pow(2, z);
+      ctx.beginPath();
+      AREA_RINGS.forEach(function (r) { r.forEach(function (q, k) { const x = mercX(q[1]) * sc - offX, y = mercY(q[0]) * sc - offY; if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.closePath(); });
+      ctx.clip();
     }
     const MC = mapColors(), RD = MC.road;
     const scale = 256 * Math.pow(2, z);
@@ -521,12 +522,20 @@
   }
 
   /* ---------- Service area (Torino) and the plain world map around it ---------- */
-  const AREA = { lat: 45.072, lng: 7.676, rLat: 0.105, rLng: 0.16 };
-  function inService(p) { if (!p || p.lat == null) return false; const a = (p.lat - AREA.lat) / AREA.rLat, b = (p.lng - AREA.lng) / AREA.rLng; return a * a + b * b <= 1; }
-  function areaRing(n) { const r = []; for (let i = 0; i < (n || 72); i++) { const t = i / (n || 72) * Math.PI * 2; r.push([AREA.lat + Math.sin(t) * AREA.rLat, AREA.lng + Math.cos(t) * AREA.rLng]); } return r; }
-  const SOON = [["Milano", 45.4642, 9.19], ["Genova", 44.4056, 8.9463], ["Bologna", 44.4949, 11.3426], ["Firenze", 43.7696, 11.2558], ["Roma", 41.9028, 12.4964], ["Napoli", 40.8518, 14.2681], ["Venezia", 45.4408, 12.3155],
-    ["Nice", 43.7102, 7.262], ["Lyon", 45.764, 4.8357], ["Paris", 48.8566, 2.3522], ["Zürich", 47.3769, 8.5417], ["München", 48.1351, 11.582], ["Wien", 48.2082, 16.3738], ["Berlin", 52.52, 13.405],
-    ["Amsterdam", 52.3676, 4.9041], ["Bruxelles", 50.8503, 4.3517], ["London", 51.5072, -0.1276], ["Barcelona", 41.3874, 2.1686], ["Madrid", 40.4168, -3.7038], ["Lisboa", 38.7223, -9.1393]];
+  // Official boundary of the Comune di Torino (OpenStreetMap relation 43992), as [lat, lng] rings.
+  const AREA_RINGS = [[[45.0418,7.5778],[45.0383,7.5811],[45.0362,7.5841],[45.0341,7.5897],[45.0299,7.5977],[45.03,7.5988],[45.0283,7.6016],[45.0298,7.6074],[45.0188,7.6005],[45.0198,7.592],[45.0173,7.5924],[45.0164,7.5898],[45.016,7.5909],[45.014,7.5931],[45.0141,7.5941],[45.0149,7.5949],[45.0146,7.5966],[45.0123,7.5964],[45.0121,7.5982],[45.0135,7.6011],[45.0133,7.6026],[45.0112,7.6066],[45.0111,7.608],[45.0098,7.61],[45.0112,7.6144],[45.0081,7.6242],[45.0083,7.6276],[45.0104,7.629],[45.0104,7.6315],[45.0101,7.6335],[45.0081,7.6366],[45.009,7.6382],[45.0088,7.639],[45.007,7.6424],[45.0071,7.6462],[45.0089,7.6521],[45.0081,7.6526],[45.0073,7.6551],[45.0163,7.6589],[45.0171,7.6706],[45.0162,7.6778],[45.0186,7.6809],[45.0209,7.6824],[45.0219,7.6824],[45.024,7.6851],[45.0246,7.687],[45.0246,7.6899],[45.0229,7.6957],[45.0233,7.6996],[45.024,7.7003],[45.0237,7.7015],[45.0243,7.7041],[45.0239,7.7076],[45.0269,7.7081],[45.0312,7.7226],[45.0378,7.7326],[45.0578,7.7558],[45.0779,7.7733],[45.0784,7.7723],[45.0783,7.77],[45.0791,7.768],[45.0802,7.7674],[45.0807,7.769],[45.0817,7.769],[45.081,7.7669],[45.0826,7.7645],[45.0821,7.7569],[45.0832,7.7546],[45.0836,7.7508],[45.0865,7.747],[45.088,7.7466],[45.0891,7.7446],[45.0908,7.7438],[45.0926,7.7416],[45.0973,7.7509],[45.1005,7.7514],[45.1026,7.7524],[45.1067,7.7439],[45.1074,7.7443],[45.1082,7.7438],[45.1094,7.7415],[45.1095,7.74],[45.113,7.7398],[45.1129,7.7366],[45.1173,7.737],[45.1182,7.7385],[45.1189,7.7386],[45.1196,7.7351],[45.1235,7.7366],[45.1237,7.7304],[45.1243,7.7289],[45.1252,7.7296],[45.1269,7.7249],[45.1262,7.7224],[45.1251,7.7212],[45.1268,7.7192],[45.1273,7.7174],[45.1305,7.7181],[45.1305,7.7209],[45.1313,7.7212],[45.1316,7.7228],[45.1328,7.7229],[45.1327,7.7235],[45.1368,7.7247],[45.1372,7.7238],[45.137,7.7222],[45.138,7.7198],[45.1381,7.7167],[45.1371,7.7143],[45.1375,7.7132],[45.1369,7.712],[45.1331,7.7112],[45.1334,7.7099],[45.1326,7.7095],[45.1309,7.6967],[45.1323,7.6966],[45.1328,7.6942],[45.1345,7.6939],[45.1346,7.6906],[45.133,7.6902],[45.134,7.6866],[45.1352,7.6858],[45.1358,7.6836],[45.1365,7.6832],[45.1372,7.6834],[45.1377,7.6816],[45.1388,7.6806],[45.1378,7.6792],[45.1386,7.678],[45.1373,7.6764],[45.1371,7.6751],[45.1382,7.6717],[45.1377,7.6703],[45.1385,7.668],[45.1385,7.6664],[45.139,7.6665],[45.1402,7.664],[45.1392,7.6624],[45.1362,7.6611],[45.1353,7.6637],[45.134,7.6634],[45.1351,7.6608],[45.135,7.6529],[45.1333,7.6557],[45.1315,7.6543],[45.1305,7.6553],[45.1295,7.6546],[45.1291,7.6553],[45.1296,7.6557],[45.1282,7.6571],[45.124,7.6537],[45.1232,7.6526],[45.1164,7.653],[45.1149,7.6546],[45.1128,7.6545],[45.112,7.6461],[45.1138,7.6229],[45.1084,7.6226],[45.108,7.6202],[45.1082,7.6143],[45.1071,7.6118],[45.1,7.6142],[45.0967,7.6186],[45.0951,7.6196],[45.0908,7.618],[45.089,7.6154],[45.0888,7.6133],[45.0863,7.6112],[45.0825,7.6114],[45.0711,7.6035],[45.0704,7.6084],[45.0681,7.6095],[45.0662,7.6141],[45.065,7.6093],[45.0606,7.6076],[45.0601,7.6098],[45.0605,7.6104],[45.059,7.6186],[45.0597,7.6251],[45.0577,7.6253],[45.0522,7.6228],[45.0514,7.6207],[45.0489,7.6174],[45.0483,7.6187],[45.0468,7.6179],[45.0459,7.6212],[45.0446,7.6203],[45.0449,7.6194],[45.0439,7.6182],[45.039,7.6164],[45.0399,7.6146],[45.0337,7.6116],[45.0408,7.5944],[45.0416,7.5927],[45.0421,7.5926],[45.0449,7.5867],[45.0421,7.5839],[45.0431,7.5822],[45.0437,7.5821],[45.0443,7.5803],[45.0418,7.5778]],[[45.1195,7.7404],[45.1173,7.7434],[45.1207,7.7485],[45.1223,7.7497],[45.1237,7.7493],[45.1246,7.7483],[45.1239,7.747],[45.1246,7.7457],[45.1223,7.7429],[45.1213,7.7431],[45.1195,7.7404]]];
+  const AREA = { lat: 45.0703, lng: 7.6869 };
+  function inService(p) {
+    if (!p || p.lat == null) return false;
+    let inside = false;
+    AREA_RINGS.forEach(function (r) {
+      for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+        const yi = r[i][0], xi = r[i][1], yj = r[j][0], xj = r[j][1];
+        if ((yi > p.lat) !== (yj > p.lat) && p.lng < (xj - xi) * (p.lat - yi) / (yj - yi) + xi) inside = !inside;
+      }
+    });
+    return inside;
+  }
   let WORLD = null;
   function loadWorld() {
     if (!WORLD) WORLD = fetch("world.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
@@ -544,13 +553,11 @@
       styleWorld(m);
     });
     const outer = [[85, -179.9], [85, 179.9], [-85, 179.9], [-85, -179.9]];
-    m._veil = L.polygon([outer, areaRing()], { renderer: RV, pane: "veilPane", stroke: true, weight: 1.5, dashArray: "4 6", interactive: false }).addTo(m);
-    const soon = SOON.map(function (c) {
-      const small = ["Genova", "Nice", "Lyon", "Bologna", "Venezia", "Firenze", "Bruxelles", "Zürich"].indexOf(c[0]) !== -1;
-      return L.marker([c[1], c[2]], { pane: "soonPane", interactive: false, keyboard: false, icon: L.divIcon({ className: "soon-wrap", html: '<div class="soon' + (small ? " small" : "") + '"><b>' + c[0] + "</b><span>Coming soon</span></div>", iconSize: null }) }).addTo(m);
-    });
-    soon.push(L.marker([AREA.lat, AREA.lng], { pane: "soonPane", interactive: false, keyboard: false, icon: L.divIcon({ className: "soon-wrap", html: '<div class="soon live"><b>Torino</b><span>Wubber is here</span></div>', iconSize: null }), zIndexOffset: 1000 }).addTo(m));
-    const zoomClass = function () { const z = m.getZoom(); m.getContainer().classList.toggle("far", z < 10); m.getContainer().classList.toggle("very-far", z < 7.25); };
+    m._veil = L.polygon([outer].concat(AREA_RINGS), { renderer: RV, pane: "veilPane", stroke: true, weight: 1.5, dashArray: "4 6", interactive: false }).addTo(m);
+    L.marker([AREA.lat, AREA.lng], { pane: "soonPane", interactive: false, keyboard: false, icon: L.divIcon({ className: "soon-wrap", html: '<div class="soon live"><b>Torino</b><span>Wubber is here</span></div>', iconSize: null }), zIndexOffset: 1000 }).addTo(m);
+    const chip = document.createElement("div"); chip.className = "soon-chip"; chip.textContent = "Outside Torino: coming soon";
+    m.getContainer().appendChild(chip);
+    const zoomClass = function () { const z = m.getZoom(); m.getContainer().classList.toggle("far", z < 10.5); };
     m.on("zoomend", zoomClass); zoomClass();
     styleWorld(m);
   }
@@ -564,7 +571,7 @@
       else if (l.options.className === "world-border") l.setStyle({ color: dark ? "rgba(255,255,255,.14)" : "rgba(60,40,70,.18)" });
     });
     m.getContainer().style.setProperty("--map-sea", MC.water);
-    if (m._veil) m._veil.setStyle({ fillColor: dark ? "#000000" : "#5B5466", fillOpacity: dark ? 0.42 : 0.16, color: dark ? "rgba(255,255,255,.35)" : "rgba(60,40,70,.35)" });
+    if (m._veil) m._veil.setStyle({ fillColor: dark ? "#000000" : "#2B2532", fillOpacity: dark ? 0.62 : 0.42, color: dark ? "rgba(255,255,255,.45)" : "rgba(43,37,50,.55)", dashArray: null, weight: 1.6 });
   }
 
   function newMap(el, interactive) {
@@ -1659,6 +1666,7 @@
     const a = S.fields.from.sel, b = S.fields.to.sel;
     if (!a || !b) { S.rideView = "home"; renderRide(); return; }
     if (S.samePlace) return;
+    if ((a.lat != null && !inService(a)) || (b.lat != null && !inService(b))) { toast("Wubber is only in Torino for now. More cities coming soon!", true); return; }
     if (DEMO.on) { if (a.lat == null || b.lat == null) { toast("Choose both addresses from the suggestions or the map.", true); return; } startDemo(a, b); return; }
     if (!S.account) { needLogin("Create an account or log in to book this ride. Your addresses are kept."); return; }
     const acc = S.account;
