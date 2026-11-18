@@ -220,7 +220,7 @@
       let nv = 0;
       d.feats.forEach(function (f) { nv += f[2].length / 2; });
       const n = d.feats.length;
-      const F = { n: n, T: new Uint8Array(n), N: new Int32Array(n), S0: new Uint32Array(n), C: new Uint32Array(n), B: new Float64Array(n * 4), MX: new Float64Array(nv), MY: new Float64Array(nv) };
+      const F = { n: n, T: new Uint8Array(n), N: new Int32Array(n), S0: new Uint32Array(n), C: new Uint32Array(n), B: new Float64Array(n * 4), MX: new Float64Array(nv), MY: new Float64Array(nv), RX: new Int32Array(nv), RY: new Int32Array(nv) };
       let v = 0;
       d.feats.forEach(function (f, i) {
         const fl = f[2], cnt = fl.length / 2, mid = Math.floor(cnt / 2);
@@ -229,7 +229,7 @@
         for (let k = 0; k < cnt; k++) {
           x += fl[2 * k]; y += fl[2 * k + 1];
           const ll = toLL(x, y), mx = mercX(ll.lng), my = mercY(ll.lat);
-          F.MX[v] = mx; F.MY[v] = my; v++;
+          F.MX[v] = mx; F.MY[v] = my; F.RX[v] = x; F.RY[v] = y; v++;
           if (mx < x0) x0 = mx; if (mx > x1) x1 = mx; if (my < y0) y0 = my; if (my > y1) y1 = my;
           if (k === mid && f[1] >= 0 && !MAPD.center[f[1]]) MAPD.center[f[1]] = ll;
         }
@@ -510,6 +510,118 @@
   function pinIcon(letter) {
     return L.divIcon({ className: "mk-wrap", html: '<div class="mk mk-' + letter.toLowerCase() + '"><span>' + letter + "</span></div>", iconSize: [32, 40], iconAnchor: [16, 38] });
   }
+  /* ---------- Routes along Torino's streets (built from the bundled map) ---------- */
+  const RG = { built: false, ok: false };
+  function buildRoadGraph() {
+    if (RG.built) return RG.ok;
+    RG.built = true;
+    const F = MAPD.F; if (!F) return false;
+    const COS = Math.cos(45.07 * Math.PI / 180);
+    const ids = new Map(), X = [], Y = [], adj = [];
+    function node(x, y) { const k = x * 100000 + y; let i = ids.get(k); if (i === undefined) { i = X.length; ids.set(k, i); X.push(x); Y.push(y); adj.push([]); } return i; }
+    function len(i, j) { const dx = (X[i] - X[j]) * COS, dy = Y[i] - Y[j]; return Math.sqrt(dx * dx + dy * dy) * 1.11; }
+    function link(i, j) { if (i === j) return; const w = len(i, j); adj[i].push(j, w); adj[j].push(i, w); }
+    const ways = [];
+    for (let f = 0; f < F.n; f++) {
+      if (F.T[f] > 5) continue;
+      const pts = [];
+      for (let v = F.S0[f], e = v + F.C[f]; v < e; v++) { const id = node(F.RX[v], F.RY[v]); if (pts[pts.length - 1] !== id) pts.push(id); }
+      for (let k = 1; k < pts.length; k++) link(pts[k - 1], pts[k]);
+      if (pts.length > 1) ways.push(pts);
+    }
+    // The map was compressed, so some junctions lost their shared point: join loose street ends to the nearest street within 15 m.
+    const G = 40, seg = new Map();
+    ways.forEach(function (pts, w) {
+      for (let k = 1; k < pts.length; k++) {
+        const p = pts[k - 1], q = pts[k];
+        for (let gx = Math.floor(Math.min(X[p], X[q]) / G); gx <= Math.floor(Math.max(X[p], X[q]) / G); gx++)
+          for (let gy = Math.floor(Math.min(Y[p], Y[q]) / G); gy <= Math.floor(Math.max(Y[p], Y[q]) / G); gy++) {
+            const key = gx * 10000 + gy; let c = seg.get(key); if (!c) { c = []; seg.set(key, c); } c.push(w, k);
+          }
+      }
+    });
+    ways.forEach(function (pts, w) {
+      [pts[0], pts[pts.length - 1]].forEach(function (e) {
+        if (adj[e].length > 2) return;
+        let best = null;
+        const gx = Math.floor(X[e] / G), gy = Math.floor(Y[e] / G);
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+          const c = seg.get((gx + dx) * 10000 + gy + dy); if (!c) continue;
+          for (let s = 0; s < c.length; s += 2) {
+            if (c[s] === w) continue;
+            const ps = ways[c[s]], p = ps[c[s + 1] - 1], q = ps[c[s + 1]];
+            const ax = X[p] * COS, ay = Y[p], vx = X[q] * COS - ax, vy = Y[q] - ay, L2 = vx * vx + vy * vy;
+            const t = L2 ? Math.max(0, Math.min(1, ((X[e] * COS - ax) * vx + (Y[e] - ay) * vy) / L2)) : 0;
+            const ddx = X[e] * COS - (ax + t * vx), ddy = Y[e] - (ay + t * vy), d = Math.sqrt(ddx * ddx + ddy * ddy) * 1.11;
+            if (d <= 15 && (!best || d < best.d)) best = { d: d, p: p, q: q };
+          }
+        }
+        if (best) { link(e, best.p); link(e, best.q); }
+      });
+    });
+    // Keep only the main connected network, so every route can be finished.
+    const comp = new Int32Array(X.length).fill(-1); let bestC = -1, bestN = 0, cid = 0;
+    for (let s = 0; s < X.length; s++) {
+      if (comp[s] !== -1) continue;
+      const st = [s]; comp[s] = cid; let cnt = 0;
+      while (st.length) { const u = st.pop(); cnt++; const A = adj[u]; for (let k = 0; k < A.length; k += 2) if (comp[A[k]] === -1) { comp[A[k]] = cid; st.push(A[k]); } }
+      if (cnt > bestN) { bestN = cnt; bestC = cid; }
+      cid++;
+    }
+    const grid = new Map();
+    for (let i = 0; i < X.length; i++) {
+      if (comp[i] !== bestC) continue;
+      const key = Math.floor(X[i] / G) * 10000 + Math.floor(Y[i] / G); let c = grid.get(key); if (!c) { c = []; grid.set(key, c); } c.push(i);
+    }
+    Object.assign(RG, { ok: true, X: X, Y: Y, adj: adj, grid: grid, COS: COS, G: G });
+    return true;
+  }
+  function nearestRoadNode(ll) {
+    const x = (ll.lng - MAPD.OX) * MAPD.Q, y = (ll.lat - MAPD.OY) * MAPD.Q;
+    const gx = Math.floor(x / RG.G), gy = Math.floor(y / RG.G);
+    let best = -1, bd = Infinity, stopAt = 12;
+    for (let r = 0; r <= stopAt; r++) {
+      for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const c = RG.grid.get((gx + dx) * 10000 + gy + dy); if (!c) continue;
+        for (let k = 0; k < c.length; k++) { const i = c[k], ex = (RG.X[i] - x) * RG.COS, ey = RG.Y[i] - y, d = ex * ex + ey * ey; if (d < bd) { bd = d; best = i; } }
+      }
+      if (best >= 0 && stopAt > r + 1) stopAt = r + 1;
+    }
+    return best;
+  }
+  const routeCache = new Map();
+  // Shortest drive along the streets from a to b, as [[lat, lng], ...]; null if the map isn't loaded.
+  function roadRoute(a, b) {
+    if (!a || !b || a.lat == null || b.lat == null || !MAPD.ready || !buildRoadGraph()) return null;
+    const ck = a.lat.toFixed(5) + "," + a.lng.toFixed(5) + ">" + b.lat.toFixed(5) + "," + b.lng.toFixed(5);
+    if (routeCache.has(ck)) return routeCache.get(ck);
+    const s = nearestRoadNode(a), t = nearestRoadNode(b);
+    if (s < 0 || t < 0) return null;
+    const X = RG.X, Y = RG.Y, adj = RG.adj, COS = RG.COS, n = X.length;
+    const g = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1), done = new Uint8Array(n);
+    const h = function (i) { const dx = (X[i] - X[t]) * COS, dy = Y[i] - Y[t]; return Math.sqrt(dx * dx + dy * dy) * 1.11; };
+    const heap = [], hk = [];
+    function push(i, k) { heap.push(i); hk.push(k); let c = heap.length - 1; while (c > 0) { const p = (c - 1) >> 1; if (hk[p] <= hk[c]) break; [heap[p], heap[c]] = [heap[c], heap[p]]; [hk[p], hk[c]] = [hk[c], hk[p]]; c = p; } }
+    function pop() { const top = heap[0], lastI = heap.pop(), lastK = hk.pop(); if (heap.length) { heap[0] = lastI; hk[0] = lastK; let c = 0; for (;;) { const l = 2 * c + 1, r = l + 1; let m = c; if (l < heap.length && hk[l] < hk[m]) m = l; if (r < heap.length && hk[r] < hk[m]) m = r; if (m === c) break; [heap[m], heap[c]] = [heap[c], heap[m]]; [hk[m], hk[c]] = [hk[c], hk[m]]; c = m; } } return top; }
+    g[s] = 0; push(s, h(s));
+    while (heap.length) {
+      const u = pop(); if (done[u]) continue; done[u] = 1;
+      if (u === t) break;
+      const A = adj[u];
+      for (let k = 0; k < A.length; k += 2) { const v = A[k], nd = g[u] + A[k + 1]; if (nd < g[v]) { g[v] = nd; prev[v] = u; push(v, nd + h(v)); } }
+    }
+    if (!done[t]) return null;
+    const path = [];
+    for (let i = t; i !== -1; i = prev[i]) path.push([MAPD.OY + Y[i] / MAPD.Q, MAPD.OX + X[i] / MAPD.Q]);
+    path.reverse();
+    path.unshift([a.lat, a.lng]); path.push([b.lat, b.lng]);
+    if (routeCache.size > 40) routeCache.clear();
+    routeCache.set(ck, path);
+    return path;
+  }
+  function pathLengthKm(path) { let s = 0; for (let i = 1; i < path.length; i++) s += haversineKm({ lat: path[i - 1][0], lng: path[i - 1][1] }, { lat: path[i][0], lng: path[i][1] }); return s; }
+
   function showAB(m, store, a, b, pad) {
     if (!m) return;
     pad = pad || { tl: [30, 64], br: [30, 28] };
@@ -519,7 +631,14 @@
     if (a && a.lat != null) { store.layers.push(L.marker([a.lat, a.lng], { icon: pinIcon("A"), keyboard: false, interactive: false }).addTo(m)); pts.push([a.lat, a.lng]); }
     if (b && b.lat != null) { store.layers.push(L.marker([b.lat, b.lng], { icon: pinIcon("B"), keyboard: false, interactive: false }).addTo(m)); pts.push([b.lat, b.lng]); }
     if (pts.length === 2) {
-      store.layers.push(L.polyline(pts, { color: window.WUBBER_THEME === "dark" ? "#C9A8FF" : "#540CAA", weight: 4, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(m));
+      const road = roadRoute(a, b);
+      const col = window.WUBBER_THEME === "dark" ? "#C9A8FF" : "#540CAA";
+      if (!m.getPane("routePane")) { m.createPane("routePane"); m.getPane("routePane").style.zIndex = 450; m.getPane("routePane").style.pointerEvents = "none"; }
+      if (road) {
+        store.layers.push(L.polyline(road, { pane: "routePane", color: window.WUBBER_THEME === "dark" ? "#17101F" : "#FFFFFF", weight: 9, opacity: 0.9, lineCap: "round", lineJoin: "round", interactive: false }).addTo(m));
+        store.layers.push(L.polyline(road, { pane: "routePane", color: col, weight: 5, lineCap: "round", lineJoin: "round", interactive: false }).addTo(m));
+        road.forEach(function (p) { pts.push(p); });
+      } else store.layers.push(L.polyline(pts, { pane: "routePane", color: col, weight: 4, dashArray: "2 9", lineCap: "round", interactive: false }).addTo(m));
       if (store.shown && !REDUCED) m.flyToBounds(pts, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, maxZoom: 16, duration: 0.6 });
       else m.fitBounds(pts, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, maxZoom: 16, animate: false });
       store.shown = true;
@@ -750,19 +869,27 @@
     if (DEMO.raf) cancelAnimationFrame(DEMO.raf); DEMO.raf = null;
     DEMO.ride = null;
   }
-  function demoDrive(from, to, ms, onDone) {
+  function demoDrive(path, ms, onDone) {
     const r = DEMO.ride; if (!r) return;
+    const cum = [0];
+    for (let k = 1; k < path.length; k++) cum.push(cum[k - 1] + haversineKm({ lat: path[k - 1][0], lng: path[k - 1][1] }, { lat: path[k][0], lng: path[k][1] }));
+    const total = cum[cum.length - 1] || 0.001;
     const t0 = performance.now();
-    const ease = function (t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
+    const ease = function (t) { return t < 0.08 ? (t / 0.08) * (t / 0.08) * 0.04 : t > 0.92 ? 1 - Math.pow((1 - t) / 0.08, 2) * 0.04 : 0.04 + (t - 0.08) / 0.84 * 0.92; };
+    let seg = 1;
     function frame(now) {
       if (DEMO.ride !== r) return;
-      const t = Math.min(1, (now - t0) / ms), e = ease(t);
-      r.carPos = { lat: from.lat + (to.lat - from.lat) * e, lng: from.lng + (to.lng - from.lng) * e, at: nowISO() };
+      const t = Math.min(1, (now - t0) / ms), dist = ease(t) * total;
+      while (seg < path.length - 1 && cum[seg] < dist) seg++;
+      const s0 = cum[seg - 1], s1 = cum[seg], f = s1 > s0 ? (dist - s0) / (s1 - s0) : 1;
+      const p0 = path[seg - 1], p1 = path[seg];
+      r.carPos = { lat: p0[0] + (p1[0] - p0[0]) * f, lng: p0[1] + (p1[1] - p0[1]) * f, at: nowISO() };
+      r.remainKm = total - dist;
       if (r.status === "assigned") r.etaMin = Math.max(1, Math.ceil((1 - t) * 4));
       updateCar(r);
       if (now - DEMO.lastRender > 900) { DEMO.lastRender = now; renderRide(); }
       if (t < 1) DEMO.raf = requestAnimationFrame(frame);
-      else { DEMO.raf = null; onDone(); }
+      else { DEMO.raf = null; r.remainKm = null; onDone(); }
     }
     DEMO.raf = requestAnimationFrame(frame);
   }
@@ -786,13 +913,16 @@
       r.fare = est ? Math.round((est.lo + est.hi) / 2) : null;
       r.carPos = { lat: start.lat, lng: start.lng, at: nowISO() };
       renderRide();
-      demoDrive(start, r.pickupPos, 18000, function () {
+      const approach = roadRoute(start, r.pickupPos) || [[start.lat, start.lng], [r.pickupPos.lat, r.pickupPos.lng]];
+      r.carPos = { lat: approach[0][0], lng: approach[0][1], at: nowISO() };
+      demoDrive(approach, Math.min(26000, Math.max(14000, pathLengthKm(approach) * 11000)), function () {
         r.arrived = true; r.etaMin = null;
         setSheetCollapsed(false); renderRide();
         demoLater(function () {
           r.status = "on_trip"; r.startedAt = nowISO(); r.arrived = false;
           renderRide(); setTimeout(function () { setSheetCollapsed(true); }, 60);
-          demoDrive(r.pickupPos, r.dropoffPos, 22000, function () {
+          const trip = roadRoute(r.pickupPos, r.dropoffPos) || [[r.pickupPos.lat, r.pickupPos.lng], [r.dropoffPos.lat, r.dropoffPos.lng]];
+          demoDrive(trip, Math.min(32000, Math.max(16000, pathLengthKm(trip) * 6000)), function () {
             r.status = "completed"; r.completedAt = nowISO(); r.carPos = null;
             updateCar(null); renderRide();
           });
@@ -838,7 +968,17 @@
   }
 
   /* ---------- The car on the rider's map ---------- */
-  const CAR_ICON_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>';
+  const CAR_ICON_SVG = '<svg class="car-body" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">' +
+    '<ellipse cx="20" cy="21" rx="13" ry="17" fill="rgba(40,10,40,.22)"/>' +
+    '<rect x="6.5" y="8.5" width="5" height="8" rx="2.2" fill="#2E1242"/><rect x="28.5" y="8.5" width="5" height="8" rx="2.2" fill="#2E1242"/>' +
+    '<rect x="6.5" y="24" width="5" height="8" rx="2.2" fill="#2E1242"/><rect x="28.5" y="24" width="5" height="8" rx="2.2" fill="#2E1242"/>' +
+    '<rect x="9" y="3.5" width="22" height="33" rx="10" fill="#EE5C98" stroke="#FFFFFF" stroke-width="2"/>' +
+    '<rect x="12" y="10" width="16" height="7" rx="3" fill="#D9EEFF"/>' +
+    '<rect x="12" y="17.5" width="16" height="10" rx="3.5" fill="#540CAA"/>' +
+    '<path d="M20 25.3c-.2 0-3.4-2-3.4-4.1 0-1.1.8-1.9 1.8-1.9.7 0 1.3.4 1.6 1 .3-.6.9-1 1.6-1 1 0 1.8.8 1.8 1.9 0 2.1-3.2 4.1-3.4 4.1z" fill="#FFFFFF"/>' +
+    '<rect x="13" y="28.5" width="14" height="4" rx="2" fill="#D9EEFF" opacity=".85"/>' +
+    '<circle cx="14" cy="6.6" r="1.7" fill="#FFE27A"/><circle cx="26" cy="6.6" r="1.7" fill="#FFE27A"/>' +
+    '<circle cx="12.6" cy="34.2" r="1.2" fill="#FF3B5C"/><circle cx="27.4" cy="34.2" r="1.2" fill="#FF3B5C"/></svg>';
   let carMarker = null, carRide = null;
   function updateCar(r) {
     const m = MAPS.main;
@@ -846,8 +986,20 @@
     if (!m || !window.L || !pos) { if (carMarker && m) m.removeLayer(carMarker); carMarker = null; carRide = null; return; }
     const ll = [pos.lat, pos.lng];
     if (!carMarker) {
-      carMarker = L.marker(ll, { icon: L.divIcon({ className: "car-wrap", html: '<div class="car-mk">' + CAR_ICON_SVG + "</div>", iconSize: [40, 40], iconAnchor: [20, 20] }), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(m);
-    } else carMarker.setLatLng(ll);
+      carMarker = L.marker(ll, { icon: L.divIcon({ className: "car-wrap", html: '<div class="car-mk">' + CAR_ICON_SVG + "</div>", iconSize: [48, 48], iconAnchor: [24, 24] }), keyboard: false, interactive: false, zIndexOffset: 1000 }).addTo(m);
+      carMarker._heading = 0; carMarker._prev = ll;
+    } else {
+      const pv = carMarker._prev, dE = (ll[1] - pv[1]) * Math.cos(ll[0] * Math.PI / 180), dN = ll[0] - pv[0];
+      if (Math.abs(dE) + Math.abs(dN) > 2e-6) {
+        let deg = Math.atan2(dE, dN) * 180 / Math.PI, cur = carMarker._heading;
+        while (deg - cur > 180) deg -= 360; while (deg - cur < -180) deg += 360;
+        carMarker._heading = cur + (deg - cur) * 0.35;
+        carMarker._prev = ll;
+        const body = carMarker.getElement() && carMarker.getElement().querySelector(".car-body");
+        if (body) body.style.transform = "rotate(" + carMarker._heading.toFixed(1) + "deg)";
+      }
+      carMarker.setLatLng(ll);
+    }
     const target = r.status === "assigned" ? r.pickupPos : r.dropoffPos;
     if (carRide !== r.id + r.status || !m.getBounds().pad(-0.08).contains(ll)) {
       carRide = r.id + r.status;
@@ -861,7 +1013,7 @@
     if (!r.carPos) return "";
     const target = r.status === "assigned" ? r.pickupPos : r.dropoffPos;
     if (!target) return "";
-    const km = haversineKm(r.carPos, target);
+    const km = r.remainKm != null ? r.remainKm : haversineKm(r.carPos, target);
     const dist = km < 1 ? Math.max(50, Math.round(km * 1000 / 50) * 50) + " m" : km.toFixed(1) + " km";
     return r.status === "assigned" ? "Her car is " + dist + " from you" : dist + " to your destination";
   }
