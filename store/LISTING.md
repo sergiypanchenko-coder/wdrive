@@ -22,7 +22,7 @@ Everything to copy into Google Play Console. Images are in this folder.
 |---|---|
 | App icon (512 × 512) | `app-icon-512.png` |
 | Feature graphic (1024 × 500) | `feature-graphic.png` |
-| Phone screenshots (2–8) | `screen-1-home.png`, `screen-2-live.png`, `screen-3-share.png`, `screen-4-choose.png` |
+| Phone screenshots (2–8) | `screen-1-home.png`, `screen-4-choose.png`, `screen-2-live.png`, `screen-3-night.png` |
 
 ## Store listing: English
 

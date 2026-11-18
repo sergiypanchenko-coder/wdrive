@@ -19,7 +19,7 @@
     if (meta) meta.setAttribute("content", t === "dark" ? "#0E0A14" : "#FFFFFF");
     // Android colours its bottom bar from the app manifest, so swap it with the theme.
     var man = document.querySelector('link[rel="manifest"]');
-    if (man) man.setAttribute("href", (t === "dark" ? "manifest-dark.webmanifest" : "manifest.webmanifest") + "?v=3");
+    if (man) man.setAttribute("href", (t === "dark" ? "manifest-dark.webmanifest" : "manifest.webmanifest") + "?v=4");
     var imgs = document.querySelectorAll("img[data-logo]");
     for (var i = 0; i < imgs.length; i++) imgs[i].src = "logo-" + imgs[i].getAttribute("data-logo") + (t === "dark" ? "-dark" : "") + ".png";
     var bs = document.querySelectorAll(".theme-btn[data-theme-set]");

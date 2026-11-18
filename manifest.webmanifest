@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Wubber",
   "short_name": "Wubber",
-  "description": "Book a night-time ride with a verified female driver in Torino.",
+  "description": "Night rides in Torino with verified women drivers.",
   "lang": "en",
   "dir": "ltr",
   "start_url": "/",
@@ -51,18 +51,25 @@
       "label": "Book a ride in Torino"
     },
     {
+      "src": "store/screen-4-choose.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Choose your ride and see the price"
+    },
+    {
       "src": "store/screen-2-live.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "See your driver arrive"
+      "label": "Watch your driver arrive"
     },
     {
-      "src": "store/screen-3-share.png",
+      "src": "store/screen-3-night.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Share your trip live"
+      "label": "Night mode for late rides"
     }
   ]
 }
