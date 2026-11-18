@@ -578,11 +578,12 @@
     const land = (cs.getPropertyValue("--map-bg") || "#F3F2F5").trim(), MC = mapColors();
     m.eachLayer(function (l) {
       if (!l.options) return;
-      if (l.options.className === "world-land") l.setStyle({ fillColor: land });
-      else if (l.options.className === "world-border") l.setStyle({ color: dark ? "rgba(255,255,255,.14)" : "rgba(60,40,70,.18)" });
+      // Coastlines and borders: clearly visible in both themes, even under the veil.
+      if (l.options.className === "world-land") l.setStyle({ fillColor: dark ? "#2A2135" : land, stroke: true, color: dark ? "rgba(214,190,255,.55)" : "rgba(60,40,70,.30)", weight: dark ? 1.1 : 0.9 });
+      else if (l.options.className === "world-border") l.setStyle({ color: dark ? "rgba(214,190,255,.5)" : "rgba(60,40,70,.28)", weight: dark ? 1 : 0.9 });
     });
-    m.getContainer().style.setProperty("--map-sea", MC.water);
-    if (m._veil) m._veil.setStyle({ fillColor: dark ? "#000000" : "#2B2532", fillOpacity: dark ? 0.62 : 0.42, color: dark ? "rgba(255,255,255,.45)" : "rgba(43,37,50,.55)", dashArray: null, weight: 1.6 });
+    m.getContainer().style.setProperty("--map-sea", dark ? "#0B1424" : MC.water);
+    if (m._veil) m._veil.setStyle({ fillColor: dark ? "#000000" : "#2B2532", fillOpacity: dark ? 0.45 : 0.42, color: dark ? "rgba(255,255,255,.45)" : "rgba(43,37,50,.55)", dashArray: null, weight: 1.6 });
   }
 
   function newMap(el, interactive) {
