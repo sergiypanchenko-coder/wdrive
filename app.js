@@ -813,9 +813,10 @@
     if (!a || !b) return;
     if (a.lat != null && b.lat != null ? haversineKm(a, b) < 0.05 : norm(a.label) === norm(b.label)) { S.samePlace = true; return; }
     if (a.lat != null && b.lat != null) {
-      const km = haversineKm(a, b) * 1.3;
+      const road = roadRoute(a, b);
+      const km = road ? pathLengthKm(road) : haversineKm(a, b) * 1.3;
       const min = Math.max(4, Math.round((km / 22) * 60));
-      const fare = Math.max(7, 3.5 + 1.3 * km + 0.3 * min);
+      const fare = Math.max(7, 3.5 + 1.3 * km + 0.3 * min) * 1.5;
       S.est = { lo: Math.round(fare * 0.9), hi: Math.round(fare * 1.15), km: Math.round(km * 10) / 10, min: min };
     }
   }
@@ -879,7 +880,20 @@
   /* ---------- Demo ride: a simulated driver drives to you (mock app) ---------- */
   // Set demoRides: false in config.js to send real ride requests to the pilot team instead.
   const DEMO = { on: !(window.WSR_CONFIG && window.WSR_CONFIG.demoRides === false), ride: null, timers: [], raf: null, lastRender: 0 };
-  const DEMO_DRIVER = { id: "demo-driver", name: "Chiara Rossi", phone: "", ncc: "yes", car: "White Fiat 500", plate: "GH 482 KT", photoUrl: "", status: "verified" };
+  let DEMO_DRIVER = null;
+  const DEMO_FIRST = ["Giulia", "Chiara", "Francesca", "Sara", "Martina", "Alessia", "Federica", "Valentina", "Elena", "Silvia", "Laura", "Ilaria", "Beatrice", "Giorgia", "Marta", "Alice", "Camilla", "Elisa", "Serena", "Paola", "Roberta", "Anna", "Noemi", "Veronica"];
+  const DEMO_LAST = ["Rossi", "Ferrero", "Bianchi", "Russo", "Colombo", "Romano", "Ricci", "Marino", "Greco", "Bruno", "Gallo", "Conti", "Costa", "Giordano", "Rinaldi", "Lombardi", "Moretti", "Barbieri", "Fontana", "Martini", "Gatti", "Bertolino", "Gribaudo", "Bosio"];
+  const DEMO_CARS = ["Fiat 500", "Fiat Panda", "Fiat Tipo", "Lancia Ypsilon", "Toyota Yaris", "Toyota Corolla", "Volkswagen Polo", "Volkswagen Golf", "Renault Clio", "Peugeot 208", "Dacia Sandero", "Opel Corsa", "Kia Niro", "Hyundai i20", "Skoda Octavia"];
+  const DEMO_COLOURS = ["White", "Black", "Grey", "Silver", "Dark blue", "Red", "Light blue"];
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function demoPlate() {
+    const L = "ABCDEFGHJKLMNPRSTVWXYZ", l = function () { return L[Math.floor(Math.random() * L.length)]; };
+    return "G" + l() + " " + String(Math.floor(100 + Math.random() * 900)) + " " + l() + l();
+  }
+  function newDemoDriver() {
+    return { id: "demo-driver", name: pick(DEMO_FIRST) + " " + pick(DEMO_LAST), phone: "", ncc: Math.random() < 0.85 ? "yes" : "in_progress",
+      car: pick(DEMO_COLOURS) + " " + pick(DEMO_CARS), plate: demoPlate(), photoUrl: "", status: "verified" };
+  }
   function demoLater(fn, ms) { DEMO.timers.push(setTimeout(fn, ms)); }
   function stopDemo() {
     DEMO.timers.forEach(clearTimeout); DEMO.timers = [];
@@ -909,7 +923,7 @@
       const dE = (lo - r.carPos.lng) * Math.cos(la * Math.PI / 180), dN = la - r.carPos.lat;
       if (Math.abs(dE) + Math.abs(dN) > 1e-7) r.carHeading = Math.atan2(dE, dN) * 180 / Math.PI;
       r.remainKm = total - dist;
-      if (r.status === "assigned") r.etaMin = Math.max(1, Math.ceil((1 - t) * 4));
+      if (r.status === "assigned") r.etaMin = Math.max(1, Math.ceil(r.remainKm / 0.35));
       updateCar(r);
       if (now - DEMO.lastRender > 900) { DEMO.lastRender = now; renderRide(); }
       if (t < 1) DEMO.raf = requestAnimationFrame(frame);
@@ -919,6 +933,7 @@
   }
   function startDemo(a, b) {
     stopDemo();
+    DEMO_DRIVER = newDemoDriver();
     const ang = Math.random() * Math.PI * 2, km = 1.1 + Math.random() * 0.5;
     const start = { lat: a.lat + Math.sin(ang) * km / 111, lng: a.lng + Math.cos(ang) * km / (111 * Math.cos(a.lat * Math.PI / 180)) };
     const est = S.est;
@@ -939,14 +954,14 @@
       renderRide();
       const approach = roadRoute(start, r.pickupPos) || [[start.lat, start.lng], [r.pickupPos.lat, r.pickupPos.lng]];
       r.carPos = { lat: approach[0][0], lng: approach[0][1], at: nowISO() };
-      demoDrive(approach, Math.min(26000, Math.max(14000, pathLengthKm(approach) * 11000)), function () {
+      demoDrive(approach, Math.min(42000, Math.max(24000, pathLengthKm(approach) * 18000)), function () {
         r.arrived = true; r.etaMin = null;
         setSheetCollapsed(false); renderRide();
         demoLater(function () {
           r.status = "on_trip"; r.startedAt = nowISO(); r.arrived = false;
           renderRide(); setTimeout(function () { setSheetCollapsed(true); }, 60);
           const trip = roadRoute(r.pickupPos, r.dropoffPos) || [[r.pickupPos.lat, r.pickupPos.lng], [r.dropoffPos.lat, r.dropoffPos.lng]];
-          demoDrive(trip, Math.min(32000, Math.max(16000, pathLengthKm(trip) * 6000)), function () {
+          demoDrive(trip, Math.min(55000, Math.max(28000, pathLengthKm(trip) * 10000)), function () {
             r.status = "completed"; r.completedAt = nowISO(); r.carPos = null;
             updateCar(null); renderRide();
           });
