@@ -616,9 +616,26 @@
     for (let i = t; i !== -1; i = prev[i]) path.push([MAPD.OY + Y[i] / MAPD.Q, MAPD.OX + X[i] / MAPD.Q]);
     path.reverse();
     path.unshift([a.lat, a.lng]); path.push([b.lat, b.lng]);
+    const smooth = roundCorners(path);
+    path.length = 0; smooth.forEach(function (p) { path.push(p); });
     if (routeCache.size > 40) routeCache.clear();
     routeCache.set(ck, path);
     return path;
+  }
+  // Round off sharp street corners so the line and the car flow through turns (Chaikin, 3 passes).
+  function roundCorners(path) {
+    let p = path;
+    for (let it = 0; it < 3; it++) {
+      if (p.length < 3) return p;
+      const out = [p[0]];
+      for (let i = 0; i < p.length - 1; i++) {
+        const a0 = p[i], a1 = p[i + 1];
+        out.push([a0[0] * 0.75 + a1[0] * 0.25, a0[1] * 0.75 + a1[1] * 0.25], [a0[0] * 0.25 + a1[0] * 0.75, a0[1] * 0.25 + a1[1] * 0.75]);
+      }
+      out.push(p[p.length - 1]);
+      p = out;
+    }
+    return p;
   }
   function pathLengthKm(path) { let s = 0; for (let i = 1; i < path.length; i++) s += haversineKm({ lat: path[i - 1][0], lng: path[i - 1][1] }, { lat: path[i][0], lng: path[i][1] }); return s; }
 
@@ -884,6 +901,13 @@
       const s0 = cum[seg - 1], s1 = cum[seg], f = s1 > s0 ? (dist - s0) / (s1 - s0) : 1;
       const p0 = path[seg - 1], p1 = path[seg];
       r.carPos = { lat: p0[0] + (p1[0] - p0[0]) * f, lng: p0[1] + (p1[1] - p0[1]) * f, at: nowISO() };
+      // Face a point ~18 m ahead, so the car starts turning just before the corner.
+      const ahead = Math.min(total, dist + 0.018);
+      let k2 = seg; while (k2 < path.length - 1 && cum[k2] < ahead) k2++;
+      const q0 = path[k2 - 1], q1 = path[k2], g = cum[k2] > cum[k2 - 1] ? (ahead - cum[k2 - 1]) / (cum[k2] - cum[k2 - 1]) : 1;
+      const la = q0[0] + (q1[0] - q0[0]) * g, lo = q0[1] + (q1[1] - q0[1]) * g;
+      const dE = (lo - r.carPos.lng) * Math.cos(la * Math.PI / 180), dN = la - r.carPos.lat;
+      if (Math.abs(dE) + Math.abs(dN) > 1e-7) r.carHeading = Math.atan2(dE, dN) * 180 / Math.PI;
       r.remainKm = total - dist;
       if (r.status === "assigned") r.etaMin = Math.max(1, Math.ceil((1 - t) * 4));
       updateCar(r);
@@ -990,14 +1014,18 @@
       carMarker._heading = 0; carMarker._prev = ll;
     } else {
       const pv = carMarker._prev, dE = (ll[1] - pv[1]) * Math.cos(ll[0] * Math.PI / 180), dN = ll[0] - pv[0];
-      if (Math.abs(dE) + Math.abs(dN) > 2e-6) {
-        let deg = Math.atan2(dE, dN) * 180 / Math.PI, cur = carMarker._heading;
-        while (deg - cur > 180) deg -= 360; while (deg - cur < -180) deg += 360;
-        carMarker._heading = cur + (deg - cur) * 0.35;
-        carMarker._prev = ll;
+      let target = r.carHeading;
+      if (target == null && Math.abs(dE) + Math.abs(dN) > 2e-6) target = Math.atan2(dE, dN) * 180 / Math.PI;
+      if (target != null) {
+        const cur = carMarker._heading, now = performance.now(), dt = Math.min(200, now - (carMarker._t || now - 16));
+        carMarker._t = now;
+        while (target - cur > 180) target -= 360; while (target - cur < -180) target += 360;
+        // Demo: ease toward the heading every frame. Real GPS: glide over 0.6 s between updates.
+        carMarker._heading = r.demo ? cur + (target - cur) * (1 - Math.exp(-dt / 140)) : target;
         const body = carMarker.getElement() && carMarker.getElement().querySelector(".car-body");
-        if (body) body.style.transform = "rotate(" + carMarker._heading.toFixed(1) + "deg)";
+        if (body) { body.style.transition = r.demo ? "none" : "transform .6s ease"; body.style.transform = "rotate(" + carMarker._heading.toFixed(1) + "deg)"; }
       }
+      carMarker._prev = ll;
       carMarker.setLatLng(ll);
     }
     const target = r.status === "assigned" ? r.pickupPos : r.dropoffPos;
