@@ -129,3 +129,7 @@ alter table public.profiles add column if not exists saved_places jsonb not null
 alter table public.profiles drop constraint if exists profiles_saved_places_check;
 alter table public.profiles add constraint profiles_saved_places_check check (jsonb_typeof(saved_places) = 'array' and jsonb_array_length(saved_places) <= 10 and pg_column_size(saved_places) < 8000);
 grant update (saved_places) on public.profiles to authenticated;
+
+-- 8. (18 Nov) Sign-up asks "I'm 18 or older"; store when it was confirmed.
+alter table public.profiles add column if not exists adult_confirmed_at timestamptz;
+-- handle_new_user() now also fills adult_confirmed_at when the sign-up data has 'adult_confirmed_at' (see the live database).

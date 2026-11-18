@@ -1284,6 +1284,7 @@
     const pw = $("#su-pass").value, pw2 = $("#su-pass2").value;
     if (pw.length < 8) miss.push("a password of at least 8 characters");
     else if (pw !== pw2) miss.push("the same password twice");
+    if (!$("#su-age").checked) miss.push("confirmation that you're 18 or older");
     if (!$("#su-terms").checked) miss.push("agreement to the privacy notice");
     return miss;
   }
@@ -1369,7 +1370,7 @@
     const tn = $("#su-tname").value.trim(), tp = $("#su-tphone").value.trim();
     const btn = $("#su-submit"); busy(btn, true, "Creating your account…");
     try {
-      const j = await authFetch("signup?redirect_to=" + encodeURIComponent(SITE), { email: email, password: pw, data: { name: name, phone: phone, trusted_name: tn, trusted_phone: tp, privacy_accepted_at: nowISO(), lang: window.WUBBER_LANG === "it" ? "it" : "en" } });
+      const j = await authFetch("signup?redirect_to=" + encodeURIComponent(SITE), { email: email, password: pw, data: { name: name, phone: phone, trusted_name: tn, trusted_phone: tp, privacy_accepted_at: nowISO(), adult_confirmed_at: nowISO(), lang: window.WUBBER_LANG === "it" ? "it" : "en" } });
       $("#signup-form").reset();
       if (j.access_token) {
         saveSession(toSession(j));

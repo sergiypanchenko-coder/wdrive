@@ -320,6 +320,8 @@
     "estimate": "stima",
     "Rate your driver": "Valuta la tua autista",
     "Skip for now": "Salta per ora",
+    "I'm 18 or older.": "Ho almeno 18 anni.",
+    "confirmation that you're 18 or older": "la conferma di avere almeno 18 anni",
     "Map zoom": "Zoom della mappa", "Zoom in": "Ingrandisci", "Zoom out": "Riduci",
     "Coming soon": "Prossimamente", "Wubber is here": "Wubber è qui", "Outside Torino: coming soon": "Fuori Torino: prossimamente",
     "Wubber is only in Torino for now. More cities coming soon!": "Per ora Wubber è solo a Torino. Altre città in arrivo!",
