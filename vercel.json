@@ -14,7 +14,7 @@
       ]
     },
     {
-      "source": "/torino-map.json",
+      "source": "/(torino-map|world).json",
       "headers": [
         {
           "key": "Cache-Control",

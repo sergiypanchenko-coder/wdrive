@@ -388,7 +388,12 @@
   }
   const textW = new Map();
   function drawMap(ctx, z, w, h, offX, offY) {
-    const F = MAPD.F; if (!F) return;
+    const F = MAPD.F; if (!F || z < 9) return;
+    {
+      const sc = 256 * Math.pow(2, z), cx = mercX(AREA.lng) * sc - offX, cy = mercY(AREA.lat) * sc - offY;
+      const rx = (mercX(AREA.lng + AREA.rLng) - mercX(AREA.lng)) * sc, ry = (mercY(AREA.lat - AREA.rLat) - mercY(AREA.lat)) * sc;
+      ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.clip();
+    }
     const MC = mapColors(), RD = MC.road;
     const scale = 256 * Math.pow(2, z);
     const vx0 = offX / scale, vy0 = offY / scale, vx1 = (offX + w) / scale, vy1 = (offY + h) / scale;
@@ -508,11 +513,58 @@
         const ctx = c.getContext("2d");
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, w, h);
-        drawMap(ctx, map.getZoom(), w, h, po.x + tl.x, po.y + tl.y);
+        ctx.save(); drawMap(ctx, map.getZoom(), w, h, po.x + tl.x, po.y + tl.y); ctx.restore();
         c.style.visibility = "visible";
       }
     });
     return StreetLayer;
+  }
+
+  /* ---------- Service area (Torino) and the plain world map around it ---------- */
+  const AREA = { lat: 45.072, lng: 7.676, rLat: 0.105, rLng: 0.16 };
+  function inService(p) { if (!p || p.lat == null) return false; const a = (p.lat - AREA.lat) / AREA.rLat, b = (p.lng - AREA.lng) / AREA.rLng; return a * a + b * b <= 1; }
+  function areaRing(n) { const r = []; for (let i = 0; i < (n || 72); i++) { const t = i / (n || 72) * Math.PI * 2; r.push([AREA.lat + Math.sin(t) * AREA.rLat, AREA.lng + Math.cos(t) * AREA.rLng]); } return r; }
+  const SOON = [["Milano", 45.4642, 9.19], ["Genova", 44.4056, 8.9463], ["Bologna", 44.4949, 11.3426], ["Firenze", 43.7696, 11.2558], ["Roma", 41.9028, 12.4964], ["Napoli", 40.8518, 14.2681], ["Venezia", 45.4408, 12.3155],
+    ["Nice", 43.7102, 7.262], ["Lyon", 45.764, 4.8357], ["Paris", 48.8566, 2.3522], ["Zürich", 47.3769, 8.5417], ["München", 48.1351, 11.582], ["Wien", 48.2082, 16.3738], ["Berlin", 52.52, 13.405],
+    ["Amsterdam", 52.3676, 4.9041], ["Bruxelles", 50.8503, 4.3517], ["London", 51.5072, -0.1276], ["Barcelona", 41.3874, 2.1686], ["Madrid", 40.4168, -3.7038], ["Lisboa", 38.7223, -9.1393]];
+  let WORLD = null;
+  function loadWorld() {
+    if (!WORLD) WORLD = fetch("world.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    return WORLD;
+  }
+  function addWorld(m) {
+    ["worldPane", 150, "veilPane", 390, "soonPane", 640].reduce(function (acc, v, i, arr) { if (i % 2 === 0 && !m.getPane(v)) { m.createPane(v); m.getPane(v).style.zIndex = arr[i + 1]; m.getPane(v).style.pointerEvents = "none"; } return acc; }, 0);
+    const R = L.canvas({ pane: "worldPane", padding: 0.5 }), RV = L.canvas({ pane: "veilPane", padding: 0.5 });
+    const unpack = function (f) { const out = []; for (let i = 0; i < f.length; i += 2) out.push([f[i + 1] / 100, f[i] / 100]); return out; };
+    loadWorld().then(function (w) {
+      if (!w) return;
+      L.polygon(w.land.map(unpack), { renderer: R, pane: "worldPane", stroke: false, fillColor: "var(--map-bg)", className: "world-land", fillOpacity: 1, interactive: false, smoothFactor: 1.5 }).addTo(m);
+      L.polyline(w.borders.map(unpack), { renderer: R, pane: "worldPane", className: "world-border", weight: 1, opacity: 1, interactive: false, smoothFactor: 1.5 }).addTo(m);
+      m.getContainer().classList.add("has-world");
+      styleWorld(m);
+    });
+    const outer = [[85, -179.9], [85, 179.9], [-85, 179.9], [-85, -179.9]];
+    m._veil = L.polygon([outer, areaRing()], { renderer: RV, pane: "veilPane", stroke: true, weight: 1.5, dashArray: "4 6", interactive: false }).addTo(m);
+    const soon = SOON.map(function (c) {
+      const small = ["Genova", "Nice", "Lyon", "Bologna", "Venezia", "Firenze", "Bruxelles", "Zürich"].indexOf(c[0]) !== -1;
+      return L.marker([c[1], c[2]], { pane: "soonPane", interactive: false, keyboard: false, icon: L.divIcon({ className: "soon-wrap", html: '<div class="soon' + (small ? " small" : "") + '"><b>' + c[0] + "</b><span>Coming soon</span></div>", iconSize: null }) }).addTo(m);
+    });
+    soon.push(L.marker([AREA.lat, AREA.lng], { pane: "soonPane", interactive: false, keyboard: false, icon: L.divIcon({ className: "soon-wrap", html: '<div class="soon live"><b>Torino</b><span>Wubber is here</span></div>', iconSize: null }), zIndexOffset: 1000 }).addTo(m));
+    const zoomClass = function () { const z = m.getZoom(); m.getContainer().classList.toggle("far", z < 10); m.getContainer().classList.toggle("very-far", z < 7.25); };
+    m.on("zoomend", zoomClass); zoomClass();
+    styleWorld(m);
+  }
+  // Canvas can't read CSS variables, so copy the theme's colours in.
+  function styleWorld(m) {
+    const cs = getComputedStyle(document.documentElement), dark = window.WUBBER_THEME === "dark";
+    const land = (cs.getPropertyValue("--map-bg") || "#F3F2F5").trim(), MC = mapColors();
+    m.eachLayer(function (l) {
+      if (!l.options) return;
+      if (l.options.className === "world-land") l.setStyle({ fillColor: land });
+      else if (l.options.className === "world-border") l.setStyle({ color: dark ? "rgba(255,255,255,.14)" : "rgba(60,40,70,.18)" });
+    });
+    m.getContainer().style.setProperty("--map-sea", MC.water);
+    if (m._veil) m._veil.setStyle({ fillColor: dark ? "#000000" : "#5B5466", fillOpacity: dark ? 0.42 : 0.16, color: dark ? "rgba(255,255,255,.35)" : "rgba(60,40,70,.35)" });
   }
 
   function newMap(el, interactive) {
@@ -521,12 +573,13 @@
       zoomControl: !!interactive, attributionControl: true,
       dragging: !!interactive, touchZoom: !!interactive, scrollWheelZoom: !!interactive, doubleClickZoom: !!interactive, boxZoom: false, keyboard: !!interactive,
       zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false, inertia: true,
-      zoomSnap: 0.25, minZoom: 10, maxZoom: 19,
-      maxBounds: [[44.6, 7.0], [45.5, 8.4]], maxBoundsViscosity: 0.5
+      zoomSnap: 0.25, minZoom: 5, maxZoom: 19,
+      maxBounds: [[33, -14], [62, 32]], maxBoundsViscosity: 0.8
     });
     m.attributionControl.setPrefix(false);
     m.attributionControl.addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors');
     if (interactive) m.zoomControl.setPosition("bottomright");
+    addWorld(m);
     new (streetLayerClass())().addTo(m);
     m.setView(TORINO, 13);
     return m;
@@ -756,6 +809,7 @@
   }
   function confirmPick() {
     if (!PICK.result || !PICK.field) return;
+    if (!inService(PICK.result)) { toast("Wubber is only in Torino for now. More cities coming soon!", true); return; }
     const f = PICK.field;
     S.fields[f].sel = PICK.result;
     $("#" + f).value = PICK.result.label;
@@ -2221,7 +2275,7 @@
     bindSheetDrag();
     window.addEventListener("wubber:lang", function () { renderAll(); });
     window.addEventListener("wubber:theme", function () {
-      [MAPS.main, MAPS.picker].forEach(function (m) { if (m) m.fire("viewreset"); });
+      [MAPS.main, MAPS.picker].forEach(function (m) { if (m) { styleWorld(m); m.fire("viewreset"); } });
       MAPS.mainKey = null; renderAll();
     });
     $("#d-photo").addEventListener("change", function () {

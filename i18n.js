@@ -320,6 +320,8 @@
     "estimate": "stima",
     "Rate your driver": "Valuta la tua autista",
     "Skip for now": "Salta per ora",
+    "Coming soon": "Prossimamente", "Wubber is here": "Wubber è qui",
+    "Wubber is only in Torino for now. More cities coming soon!": "Per ora Wubber è solo a Torino. Altre città in arrivo!",
     "Demo ride: the driver and her car are simulated.": "Corsa dimostrativa: l'autista e la sua auto sono simulate.",
     "In a real ride, this sends a live link to a friend.": "In una corsa reale, questo invia un link dal vivo a un'amica.",
     "Demo ride: in a real ride, the pilot team would be alerted now.": "Corsa dimostrativa: in una corsa reale, il team verrebbe avvisato ora.",

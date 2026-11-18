@@ -547,3 +547,14 @@ body.locked .handle-bar { display: none; }
 .car-mk::after { inset: 2px; border-color: #EE5C98; border-width: 2px; }
 .car-body { display: block; transition: transform .12s linear; filter: drop-shadow(0 2px 3px rgba(46, 18, 66, .35)); }
 @keyframes car-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+
+/* ---------- World map around Torino ---------- */
+.leaflet-container.has-world { background: var(--map-sea, #D3E0F0); }
+.soon-wrap { background: none; border: 0; }
+.soon { transform: translate(-50%, -50%); display: inline-flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 9px; border-radius: 10px; background: var(--bg); color: var(--ink); box-shadow: 0 2px 8px rgba(30, 10, 40, .18); white-space: nowrap; font-family: var(--font-body); line-height: 1.15; opacity: 0; transition: opacity .2s ease; }
+.soon b { font-size: 12.5px; font-weight: 700; }
+.soon span { font-size: 10.5px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+.soon.live { background: var(--accent); color: var(--accent-ink); }
+.soon.live span { color: inherit; opacity: .85; }
+.leaflet-container.far .soon { opacity: 1; }
+.leaflet-container.very-far .soon.small { opacity: 0; }
