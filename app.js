@@ -489,16 +489,26 @@
         this._c = document.createElement("canvas");
         this._c.className = "wsr-canvas";
         map.getPane("overlayPane").appendChild(this._c);
+        if (map._zoomAnimated) L.DomUtil.addClass(this._c, "leaflet-zoom-animated");
         map.on("moveend zoomend resize viewreset", this._redraw, this);
-        map.on("zoomstart", this._hide, this);
+        // Keep the streets on screen while zooming: scale the last drawing until the new one is ready.
+        map.on("zoomanim", this._onAnim, this);
+        map.on("zoom", this._onZoom, this);
         this._redraw();
       },
       onRemove: function (map) {
         this._c.remove();
         map.off("moveend zoomend resize viewreset", this._redraw, this);
-        map.off("zoomstart", this._hide, this);
+        map.off("zoomanim", this._onAnim, this);
+        map.off("zoom", this._onZoom, this);
       },
-      _hide: function () { this._c.style.visibility = "hidden"; },
+      _scaleTo: function (center, zoom) {
+        if (this._z == null || !this._tl) return;
+        const map = this._map, scale = map.getZoomScale(zoom, this._z);
+        L.DomUtil.setTransform(this._c, map._latLngToNewLayerPoint(this._tl, zoom, center), scale);
+      },
+      _onAnim: function (e) { this._scaleTo(e.center, e.zoom); },
+      _onZoom: function () { const m = this._map; if (m._animatingZoom) return; this._scaleTo(m.getCenter(), m.getZoom()); },
       _redraw: function () {
         const map = this._map, size = map.getSize();
         if (!size.x || !size.y) return;
@@ -510,6 +520,7 @@
         c.style.width = w + "px"; c.style.height = h + "px";
         const tl = map.containerPointToLayerPoint([-px, -py]);
         L.DomUtil.setPosition(c, tl);
+        this._z = map.getZoom(); this._tl = map.layerPointToLatLng(tl);
         const po = map.getPixelOrigin();
         const ctx = c.getContext("2d");
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -579,8 +590,8 @@
     const m = L.map(el, {
       zoomControl: !!interactive, attributionControl: true,
       dragging: !!interactive, touchZoom: !!interactive, scrollWheelZoom: !!interactive, doubleClickZoom: !!interactive, boxZoom: false, keyboard: !!interactive,
-      zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false, inertia: true,
-      zoomSnap: 0.25, minZoom: 5, maxZoom: 19,
+      zoomAnimation: !REDUCED, fadeAnimation: false, markerZoomAnimation: !REDUCED, inertia: true,
+      zoomSnap: 0.25, zoomDelta: 0.75, wheelPxPerZoomLevel: 90, wheelDebounceTime: 25, minZoom: 5, maxZoom: 19,
       maxBounds: [[33, -14], [62, 32]], maxBoundsViscosity: 0.8
     });
     m.attributionControl.setPrefix(false);
@@ -2040,6 +2051,8 @@
     "search-close": function () { closeSearch(); renderRide(); },
     "back-home": function () { S.rideView = "home"; renderRide(); },
     "request": function () { requestRide(); },
+    "zoom-in": function () { if (MAPS.main) MAPS.main.zoomIn(1); },
+    "zoom-out": function () { if (MAPS.main) MAPS.main.zoomOut(1); },
     "saved-dest": function (b) {
       const k = b.dataset.kind, p = savedPlace(k);
       if (p) {
