@@ -992,17 +992,26 @@
   }
 
   /* ---------- The car on the rider's map ---------- */
-  const CAR_ICON_SVG = '<svg class="car-body" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">' +
-    '<ellipse cx="20" cy="21" rx="13" ry="17" fill="rgba(40,10,40,.22)"/>' +
-    '<rect x="6.5" y="8.5" width="5" height="8" rx="2.2" fill="#2E1242"/><rect x="28.5" y="8.5" width="5" height="8" rx="2.2" fill="#2E1242"/>' +
-    '<rect x="6.5" y="24" width="5" height="8" rx="2.2" fill="#2E1242"/><rect x="28.5" y="24" width="5" height="8" rx="2.2" fill="#2E1242"/>' +
-    '<rect x="9" y="3.5" width="22" height="33" rx="10" fill="#EE5C98" stroke="#FFFFFF" stroke-width="2"/>' +
-    '<rect x="12" y="10" width="16" height="7" rx="3" fill="#D9EEFF"/>' +
-    '<rect x="12" y="17.5" width="16" height="10" rx="3.5" fill="#540CAA"/>' +
-    '<image href="logo-mark-white.png" x="13.2" y="18.4" width="13.6" height="8.7" preserveAspectRatio="xMidYMid meet"/>' +
-    '<rect x="13" y="28.5" width="14" height="4" rx="2" fill="#D9EEFF" opacity=".85"/>' +
-    '<circle cx="14" cy="6.6" r="1.7" fill="#FFE27A"/><circle cx="26" cy="6.6" r="1.7" fill="#FFE27A"/>' +
-    '<circle cx="12.6" cy="34.2" r="1.2" fill="#FF3B5C"/><circle cx="27.4" cy="34.2" r="1.2" fill="#FF3B5C"/></svg>';
+  const CAR_ICON_SVG = '<svg class="car-body" width="44" height="44" viewBox="0 0 40 40" aria-hidden="true">' +
+    '<defs>' +
+    '<linearGradient id="wcb" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#C92F6E"/><stop offset=".22" stop-color="#F06BA4"/><stop offset=".5" stop-color="#F98DBB"/><stop offset=".78" stop-color="#F06BA4"/><stop offset="1" stop-color="#C92F6E"/></linearGradient>' +
+    '<linearGradient id="wcg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3A1A5C"/><stop offset="1" stop-color="#1E0B33"/></linearGradient>' +
+    '<radialGradient id="wcs" cx=".5" cy=".5" r=".5"><stop offset=".55" stop-color="rgba(30,8,40,.35)"/><stop offset="1" stop-color="rgba(30,8,40,0)"/></radialGradient>' +
+    '</defs>' +
+    '<ellipse cx="20.6" cy="21.2" rx="12.5" ry="19" fill="url(#wcs)"/>' +
+    '<rect x="9.2" y="7.5" width="3" height="6.5" rx="1.4" fill="#22102F"/><rect x="27.8" y="7.5" width="3" height="6.5" rx="1.4" fill="#22102F"/>' +
+    '<rect x="9.2" y="26" width="3" height="6.5" rx="1.4" fill="#22102F"/><rect x="27.8" y="26" width="3" height="6.5" rx="1.4" fill="#22102F"/>' +
+    '<path d="M20 1.8c6.4 0 9.3 2.6 9.6 7.4l.2 21.6c0 5.3-2.6 7.6-9.8 7.6s-9.8-2.3-9.8-7.6l.2-21.6c.3-4.8 3.2-7.4 9.6-7.4z" fill="url(#wcb)"/>' +
+    '<ellipse cx="9.4" cy="13.6" rx="1.5" ry="1" fill="#C92F6E"/><ellipse cx="30.6" cy="13.6" rx="1.5" ry="1" fill="#C92F6E"/>' +
+    '<path d="M12.6 12.4c4.6-1.9 10.2-1.9 14.8 0l-1.6 5.2c-3.8-1.1-7.8-1.1-11.6 0z" fill="url(#wcg)"/>' +
+    '<path d="M14.6 13.1c1.6-.5 3.3-.7 5-.7" stroke="rgba(255,255,255,.55)" stroke-width=".9" stroke-linecap="round" fill="none"/>' +
+    '<rect x="14" y="17.8" width="12" height="11.4" rx="3.2" fill="#FCC0DA"/><rect x="14" y="17.8" width="12" height="11.4" rx="3.2" fill="none" stroke="rgba(201,47,110,.35)" stroke-width=".6"/>' +
+    '<image href="logo-mark.png" x="15.1" y="19.6" width="9.8" height="6.3" preserveAspectRatio="xMidYMid meet"/>' +
+    '<path d="M14 29.8c3.9 1 8.1 1 12 0l.9 3.3c-4.5 1.3-9.3 1.3-13.8 0z" fill="url(#wcg)"/>' +
+    '<ellipse cx="14.9" cy="4.4" rx="2.2" ry="1.05" fill="#FFF7D1" transform="rotate(-18 14.9 4.4)"/><ellipse cx="25.1" cy="4.4" rx="2.2" ry="1.05" fill="#FFF7D1" transform="rotate(18 25.1 4.4)"/>' +
+    '<path d="M13.4 36.6l2.2.3M26.6 36.6l-2.2.3" stroke="#FF2D55" stroke-width="1.5" stroke-linecap="round"/>' +
+    '<path d="M20 2.6v8.4" stroke="rgba(255,255,255,.28)" stroke-width="1.2" stroke-linecap="round"/>' +
+    '</svg>';
   let carMarker = null, carRide = null;
   function updateCar(r) {
     const m = MAPS.main;
