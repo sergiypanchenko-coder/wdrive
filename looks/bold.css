@@ -1,0 +1,29 @@
+/* Wubber look: "Bold purple". A serif that echoes the logo, neutral greys, purple as the one strong colour. */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Instrument+Sans:wght@400;500;600;700&display=swap");
+:root[data-look="bold"] {
+  --bg: #FFFFFF; --surface: #F4F1F8; --surface-2: #EAE4F2; --line: #E4DEEC;
+  --ink: #1B1026; --muted: #6B6178;
+  --accent: #540CAA; --accent-ink: #FFFFFF; --accent-soft: #EEE6FB;
+  --brand: #540CAA; --brand-soft: #EEE6FB;
+  --map-bg: #F2F0F5;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Instrument Sans", "Segoe UI", sans-serif;
+  --r-lg: 18px; --r-md: 12px;
+  --shadow: 0 12px 30px rgba(27, 16, 38, .14);
+}
+:root[data-look="bold"][data-theme="dark"] {
+  --bg: #141019; --surface: #1E1826; --surface-2: #281F33; --line: #2F2639; --ink: #F4EFFA; --muted: #A99DB8;
+  --accent: #8B5CF6; --accent-soft: #2A1E44; --brand: #C4A4FF; --brand-soft: #2A1E44; --map-bg: #17121D;
+}
+[data-look="bold"] .greet { font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: -0.02em; }
+[data-look="bold"] h1, [data-look="bold"] h2, [data-look="bold"] h3 { font-weight: 800; letter-spacing: -0.015em; }
+[data-look="bold"] .btn { border-radius: 14px; letter-spacing: .01em; }
+[data-look="bold"] .btn-primary { box-shadow: 0 8px 20px rgba(84, 12, 170, .28); }
+[data-look="bold"] .whereto { border-radius: 14px; background: var(--surface); font-weight: 700; }
+[data-look="bold"] .lbl { text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 13px; }
+[data-look="bold"] .card { background: var(--surface); }
+[data-look="bold"] .act { border-radius: 14px; }
+[data-look="bold"] .avatar { background: var(--brand); color: #FFFFFF; font-family: var(--font-display); }
+[data-look="bold"] .pin span { border-radius: 10px; border-width: 2px; font-family: var(--font-display); }
+[data-look="bold"] .ride-opt { border-radius: 16px; }
+[data-look="bold"] .badge { border-radius: 999px; }

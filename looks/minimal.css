@@ -1,0 +1,36 @@
+/* Wubber look: "Clean minimal". Black and white like the big ride apps, flat lists, purple only for the brand and the car. */
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap");
+:root[data-look="minimal"] {
+  --bg: #FFFFFF; --surface: #F3F3F3; --surface-2: #EAEAEA; --line: #E8E8E8;
+  --ink: #0B0B0C; --muted: #5E5E64;
+  --accent: #0B0B0C; --accent-ink: #FFFFFF; --accent-soft: #F0F0F0;
+  --brand: #540CAA; --brand-soft: #F1EBFA;
+  --map-bg: #EFEFEF;
+  --font-display: "Inter Tight", "Segoe UI", sans-serif;
+  --font-body: "Inter Tight", "Segoe UI", sans-serif;
+  --r-lg: 10px; --r-md: 8px;
+  --shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+:root[data-look="minimal"][data-theme="dark"] {
+  --bg: #0B0B0C; --surface: #18181A; --surface-2: #222225; --line: #26262A; --ink: #F5F5F7; --muted: #A1A1A8;
+  --accent: #F5F5F7; --accent-ink: #0B0B0C; --accent-soft: #1F1F22; --brand: #C4A4FF; --brand-soft: #221A30; --map-bg: #141416;
+}
+[data-look="minimal"] .greet { font-weight: 800; font-size: 26px; letter-spacing: -0.03em; }
+[data-look="minimal"] h1, [data-look="minimal"] h2, [data-look="minimal"] h3 { font-weight: 800; letter-spacing: -0.025em; }
+[data-look="minimal"] .btn { border-radius: 8px; }
+[data-look="minimal"] .whereto { border-radius: 999px; background: var(--surface); font-weight: 700; }
+[data-look="minimal"] .lbl { text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 13px; color: var(--muted); }
+[data-look="minimal"] .card { background: none; border-radius: 0; padding: 14px 0 0; border-top: 1px solid var(--line); }
+[data-look="minimal"] .card.plain { border: 0; border-top: 1px solid var(--line); }
+[data-look="minimal"] .act { border-radius: 8px; }
+[data-look="minimal"] .row-btn .ico, [data-look="minimal"] .row-static .ico { border-radius: 8px; background: var(--surface); }
+[data-look="minimal"] .avatar { background: var(--surface-2); color: var(--ink); }
+[data-look="minimal"] .pin span { border-radius: 6px; background: var(--surface); border: 0; }
+[data-look="minimal"] .ride-opt { border-radius: 10px; border-color: var(--ink); }
+[data-look="minimal"] .ride-opt .car { background: var(--surface); color: var(--ink); border-radius: 8px; }
+[data-look="minimal"] .badge { background: none; padding: 0; color: var(--ok); }
+[data-look="minimal"] .place-chip { border-radius: 8px; border-style: solid; }
+[data-look="minimal"] .seg { border-radius: 10px; }
+[data-look="minimal"] .seg button { border-radius: 8px; }
+[data-look="minimal"] .seg button[aria-selected=true] { color: var(--ink); }
+[data-look="minimal"] .fab, [data-look="minimal"] .map-brand { box-shadow: 0 2px 10px rgba(0, 0, 0, .14); }

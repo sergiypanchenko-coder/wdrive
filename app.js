@@ -361,7 +361,27 @@
     light: { park: "#DCEFD5", water: "#C9DEF0", texture: "#E8D2DC", halo: "rgba(255,255,255,0.95)", label: "#6E3B55", dot: "#C42A6F", spot: "#4A1491", road: ROAD },
     dark: { park: "#1E3326", water: "#1B2B45", texture: "#3A2B47", halo: "rgba(23,16,31,0.92)", label: "#D7C4E4", dot: "#EE5C98", spot: "#C9A8FF", road: ROAD_DARK }
   };
-  function mapColors() { return MAPC[window.WUBBER_THEME === "dark" ? "dark" : "light"]; }
+  const ROAD_GREY = {
+    1: { min: 0, w: 9, cas: "#CFCFD4", fill: "#E2E2E6" }, 2: { min: 0, w: 7.5, cas: "#D9D9DE", fill: "#FFFFFF" },
+    3: { min: 13.5, w: 5, cas: "#E1E1E5", fill: "#FFFFFF" }, 4: { min: 14.5, w: 4, cas: "#E4E4E8", fill: "#FAFAFB" }, 5: { min: 15.5, w: 3, cas: "#E6E6EA", fill: "#FFFFFF" }
+  };
+  const ROAD_LAV = {
+    1: { min: 0, w: 9, cas: "#D8CBEA", fill: "#E9DEF7" }, 2: { min: 0, w: 7.5, cas: "#DDD5E8", fill: "#FFFFFF" },
+    3: { min: 13.5, w: 5, cas: "#E3DDEC", fill: "#FFFFFF" }, 4: { min: 14.5, w: 4, cas: "#E6E1EE", fill: "#FAF8FC" }, 5: { min: 15.5, w: 3, cas: "#E8E3EF", fill: "#FFFFFF" }
+  };
+  const ROAD_NEON = {
+    1: { min: 0, w: 9, cas: "#4A1838", fill: "#7A2458" }, 2: { min: 0, w: 7.5, cas: "#1E1626", fill: "#2E2338" },
+    3: { min: 13.5, w: 5, cas: "#1B1422", fill: "#271E30" }, 4: { min: 14.5, w: 4, cas: "#1A1320", fill: "#221A2A" }, 5: { min: 15.5, w: 3, cas: "#19121F", fill: "#251C2E" }
+  };
+  MAPC.minimal = { park: "#E3EEDF", water: "#D6E2EE", texture: "#E4E4E8", halo: "rgba(255,255,255,0.95)", label: "#3C3C44", dot: "#0B0B0C", spot: "#0B0B0C", road: ROAD_GREY };
+  MAPC.bold = { park: "#E2EEDC", water: "#D3E0F0", texture: "#E6E0EE", halo: "rgba(255,255,255,0.95)", label: "#4B3F5C", dot: "#540CAA", spot: "#540CAA", road: ROAD_LAV };
+  MAPC.night = { park: "#142A1E", water: "#14223A", texture: "#2A2033", halo: "rgba(14,10,20,0.92)", label: "#D9CCE8", dot: "#FF4FA0", spot: "#B98CFF", road: ROAD_NEON };
+  function mapColors() {
+    const look = document.documentElement.getAttribute("data-look"), dark = window.WUBBER_THEME === "dark";
+    if (look === "night") return MAPC.night;
+    if (look && MAPC[look] && !dark) return MAPC[look];
+    return MAPC[dark ? "dark" : "light"];
+  }
   const textW = new Map();
   function drawMap(ctx, z, w, h, offX, offY) {
     const F = MAPD.F; if (!F) return;
