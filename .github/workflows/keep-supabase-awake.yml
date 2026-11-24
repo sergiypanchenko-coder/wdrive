@@ -1,20 +1,53 @@
 # Free Supabase projects pause after 7 days without activity.
-# This pings the database every 3 days so the Wubber pilot never goes to sleep.
+# Every hour this visits the Wubber website like a person would (home, trip and
+# privacy pages), then talks to the database, the login service and the data API,
+# so the pilot never goes to sleep. If the database doesn't answer, the run fails
+# and GitHub emails the repository owner.
 name: Keep Supabase awake
 on:
   schedule:
-    - cron: "17 9 */3 * *"
+    - cron: "23 * * * *"   # every hour at :23 (GitHub can start runs late, so hourly leaves plenty of margin)
   workflow_dispatch:
+concurrency:
+  group: keep-awake
+  cancel-in-progress: true
 jobs:
-  ping:
+  visit:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE: https://wubber-pi.vercel.app
+      SUPABASE: https://qcrlmxrvmmvccwutztzn.supabase.co
+      UA: "Mozilla/5.0 (compatible; WubberKeepAwake/1.0)"
     steps:
-      - name: Ask the database a tiny question
+      - name: Visit the website
         run: |
-          KEY=$(grep -o 'supabaseAnonKey: "[^"]*"' <(curl -fsS https://wubber-pi.vercel.app/config.js) | cut -d'"' -f2)
-          URL="https://qcrlmxrvmmvccwutztzn.supabase.co"
-          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$URL/rest/v1/rpc/shared_trip" \
-            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-            -d '{"p_token":"00000000-0000-0000-0000-000000000000"}')
-          echo "Supabase answered $code"
-          test "$code" = "200"
+          for page in / /trip.html /privacy.html /config.js /app.js; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -A "$UA" --retry 3 --retry-delay 10 "$SITE$page")
+            echo "Website $page answered $code"
+          done
+
+      - name: Talk to the database
+        run: |
+          # The public (anon) key is read from the live site, so it stays right if it ever changes.
+          KEY=$(curl -fsS -A "$UA" --retry 3 "$SITE/config.js" | grep -o 'supabaseAnonKey: "[^"]*"' | cut -d'"' -f2)
+          test -n "$KEY" || { echo "Couldn't read the public key from $SITE/config.js"; exit 1; }
+          H=(-H "apikey: $KEY" -H "Authorization: Bearer $KEY" -A "$UA")
+
+          # 1. Run a database function (the one shared-trip links use) with a token that matches nothing.
+          ok=""
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SUPABASE/rest/v1/rpc/shared_trip" "${H[@]}" \
+              -H "Content-Type: application/json" -d '{"p_token":"00000000-0000-0000-0000-000000000000"}')
+            echo "Database function answered $code (attempt $attempt)"
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            sleep 20
+          done
+
+          # 2. Read a table (security rules return nothing to a visitor, but the query still runs).
+          echo "Table read answered $(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE/rest/v1/profiles?select=id&limit=1" "${H[@]}")"
+
+          # 3. Ask the login service for its settings.
+          echo "Login service answered $(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE/auth/v1/settings" "${H[@]}")"
+
+          test -n "$ok" || { echo "The database did not answer. Check the project in the Supabase dashboard."; exit 1; }
