@@ -1,6 +1,6 @@
 # Free Supabase projects pause after 7 days without activity.
 # Every hour this visits the Wubber website like a person would (home, trip and
-# privacy pages), then talks to the database, the login service and the data API,
+# privacy pages), then talks to the database and the login service,
 # so the pilot never goes to sleep. If the database doesn't answer, the run fails
 # and GitHub emails the repository owner.
 name: Keep Supabase awake
@@ -44,10 +44,7 @@ jobs:
             sleep 20
           done
 
-          # 2. Read a table (security rules return nothing to a visitor, but the query still runs).
-          echo "Table read answered $(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE/rest/v1/profiles?select=id&limit=1" "${H[@]}")"
-
-          # 3. Ask the login service for its settings.
+          # 2. Ask the login service for its settings.
           echo "Login service answered $(curl -s -o /dev/null -w "%{http_code}" "$SUPABASE/auth/v1/settings" "${H[@]}")"
 
           test -n "$ok" || { echo "The database did not answer. Check the project in the Supabase dashboard."; exit 1; }
